@@ -1,8 +1,8 @@
-defmodule Spider.Mixfile do
+defmodule Huo.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :spider,
+    [app: :huo,
      version: "0.0.1",
      build_path: "../../_build",
      config_path: "../../config/config.exs",
@@ -18,8 +18,7 @@ defmodule Spider.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger],
-     mod: {Spider, []}]
+    [applications: [:logger]]
   end
 
   # Dependencies can be Hex packages:
@@ -36,6 +35,6 @@ defmodule Spider.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:poison, "~> 2.0"}]
+    [{:httpoison, "~> 0.8.0"}]
   end
 end
