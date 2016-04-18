@@ -6,9 +6,11 @@ defmodule Huo.Market do
     HTTPoison.start
     response = HTTPoison.get(@simple_base)
     case response do
-      {:ok, %HTTPoison.Response{status_code: 200, body: body} = result} ->
+      {:ok, %{status_code: 200, body: body} = result} ->
         body = body |> Poison.decode!
-        {:ok, %{result | body: body}}
+        {:ok, %{result | body: body} |> Map.from_struct}
+      {:ok, result} ->
+        {:bad_status, result}
       _ ->
         response
     end
