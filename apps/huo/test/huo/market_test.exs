@@ -1,5 +1,5 @@
 defmodule Huo.MarketTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   test "get :simple" do
     assert {:ok, _} = Huo.Market.get(:simple)
