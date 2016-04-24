@@ -34,7 +34,7 @@ defmodule Caravan.Wheel do
     end
   end
 
-  def handle_pull(handler, body, state) do
+  defp handle_pull(handler, body, state) do
     case handler.insert(body) do
       {:ok, struct} ->
         {:reply, {:ok, struct}, state}
@@ -43,7 +43,7 @@ defmodule Caravan.Wheel do
     end
   end
 
-  def handle_fetch(handler, body, state) do
+  defp handle_fetch(handler, body, state) do
     {:reply, {:ok, handler.map_to_ticker(body)}, state}
   end
 

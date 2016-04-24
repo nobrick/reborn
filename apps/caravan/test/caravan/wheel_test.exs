@@ -1,10 +1,10 @@
 defmodule Caravan.WheelTest do
   use ExUnit.Case
   import Ecto.Query, only: [from: 2]
+  alias Ecto.Adapters.SQL.Sandbox
   alias Caravan.Wheel
   alias Dirk.Ticker
   alias Dirk.Repo
-  alias Ecto.Adapters.SQL.Sandbox
 
   def count_ticker do
     (from t in Ticker, select: count(t.id))

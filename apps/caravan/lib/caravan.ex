@@ -5,6 +5,7 @@ defmodule Caravan do
     import Supervisor.Spec, warn: false
 
     children = [
+      supervisor(Task.Supervisor, [[name: Caravan.Wheel.Interval.Supervisor]]),
       worker(Caravan.Wheel, [[name: Caravan.Wheel]])
     ]
 
