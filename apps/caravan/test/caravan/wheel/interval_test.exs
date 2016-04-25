@@ -10,7 +10,10 @@ defmodule Caravan.Wheel.IntervalTest do
     {:ok, wheel} = Wheel.start_link
     Sandbox.allow(Repo, self(), wheel)
     {:ok, interval_sup} = Task.Supervisor.start_link
-    {:ok, wheel: wheel, interval_sup: interval_sup, pulling_interval: 1000, test_process: self()}
+    {:ok, wheel: wheel,
+          interval_sup: interval_sup,
+          pulling_interval: 1000,
+          test_process: self()}
   end
 
   test "start_link/2 pulls at a regular interval", context do
