@@ -8,7 +8,6 @@ defmodule Huo.Market do
   def get(:kline), do: get(:kline, @kline_1min_base)
 
   defp get(_mode, base_url) do
-    HTTPoison.start
     response = HTTPoison.get(base_url)
     case response do
       {:ok, %{status_code: 200, body: body} = result} ->
