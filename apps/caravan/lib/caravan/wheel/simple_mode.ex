@@ -13,7 +13,7 @@ defmodule Caravan.Wheel.SimpleMode do
   end
 
   def insert(body) do
-    Ticker.changeset(%Ticker{}, map_resp(body))
+    Ticker.changeset(:create, %Ticker{}, map_resp(body))
     |> Repo.insert
   end
 end
