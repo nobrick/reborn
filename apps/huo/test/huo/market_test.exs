@@ -9,7 +9,7 @@ defmodule Huo.MarketTest do
     assert {:ok, _} = Huo.Market.get(:detail)
   end
 
-  test "get/1 :kline" do
-    assert {:ok, _} = Huo.Market.get(:kline)
+  test "get/1 :k1" do
+    assert {:ok, _} = Huo.Market.get(:k1)
   end
 end
