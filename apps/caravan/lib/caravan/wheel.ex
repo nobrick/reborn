@@ -1,6 +1,7 @@
 defmodule Caravan.Wheel do
   use GenServer
-  alias Caravan.Wheel.SimpleMode
+
+  ## API
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, :ok, opts)
@@ -25,27 +26,16 @@ defmodule Caravan.Wheel do
     case Huo.Market.get(mode) do
       {:ok, %{body: body}} ->
         if Keyword.get(opts, :fetch_only, false) do
-          handle_fetch(handler, body, state)
+          {:reply, handler.handle_fetch(body), state}
         else
-          handle_pull(handler, body, state)
+          {:reply, handler.handle_pull(body), state}
         end
       error ->
         {:reply, {:error, :huo_market, error}, state}
     end
   end
 
-  defp handle_pull(handler, body, state) do
-    case handler.insert(body) do
-      {:ok, struct} ->
-        {:reply, {:ok, struct}, state}
-      {:error, changeset} ->
-        {:reply, {:error, :changeset, changeset}, state}
-    end
-  end
+  ## Helpers
 
-  defp handle_fetch(handler, body, state) do
-    {:reply, {:ok, handler.map_to_ticker(body)}, state}
-  end
-
-  defp handler_for(:simple), do: SimpleMode
+  defp handler_for(:simple), do: Caravan.Wheel.SimpleMode
 end
