@@ -5,7 +5,7 @@ defmodule Huo.Market do
 
   def get(:simple), do: get(:simple, @simple_base)
   def get(:detail), do: get(:detail, @detail_base)
-  def get(:kline), do: get(:kline, @kline_1min_base)
+  def get(:k1), do: get(:kline, @kline_1min_base)
 
   defp get(_mode, base_url) do
     response = HTTPoison.get(base_url)
