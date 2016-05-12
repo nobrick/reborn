@@ -2,6 +2,21 @@ defmodule Caravan.Wheel.SimpleMode do
   alias Dirk.Repo
   alias Dirk.Ticker
 
+  ## API
+
+  def handle_fetch(body) do
+    {:ok, map_to_ticker(body)}
+  end
+
+  def handle_pull(body) do
+    case insert(body) do
+      {:ok, struct} -> {:ok, struct}
+      {:error, changeset} -> {:error, :changeset, changeset}
+    end
+  end
+
+  ## Helpers
+
   def map_to_ticker(body), do: struct!(Ticker, map_resp(body))
 
   def map_resp(%{"ticker" => %{"buy" => bi, "high" => hi, "last" => la, "low"
