@@ -12,4 +12,8 @@ defmodule Huo.MarketTest do
   test "get/1 :k1" do
     assert {:ok, _} = Huo.Market.get(:k1)
   end
+
+  test "get/1 :k15" do
+    assert {:ok, _} = Huo.Market.get(:k15)
+  end
 end
