@@ -14,11 +14,10 @@ defmodule Dirk.Ticker do
     field :of, :float
     field :bi, :float
     field :d_la, :float
-    field :type, :string, default: "line"
     field :time, Ecto.DateTime
   end
 
-  @required_fields ~w(op la hi lo vo type time)
+  @required_fields ~w(op la hi lo vo time)
   @optional_fields ~w(of bi d_la)
 
   def changeset(:create, model, params \\ :empty) do
