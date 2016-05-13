@@ -1,4 +1,4 @@
-defmodule Caravan.Wheel.SimpleMode do
+defmodule Caravan.Wheel.Modes.Simple do
   alias Dirk.Repo
   alias Dirk.Ticker
 

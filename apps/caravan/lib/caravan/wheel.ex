@@ -37,5 +37,5 @@ defmodule Caravan.Wheel do
 
   ## Helpers
 
-  defp handler_for(:simple), do: Caravan.Wheel.SimpleMode
+  defp handler_for(:simple), do: Caravan.Wheel.Modes.Simple
 end
