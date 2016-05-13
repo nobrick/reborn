@@ -5,7 +5,7 @@ defmodule Dirk.Ticker do
   alias Dirk.Ticker
   alias Dirk.Repo
 
-  schema "ticker" do
+  schema "tickers" do
     field :op, :float
     field :la, :float
     field :hi, :float
