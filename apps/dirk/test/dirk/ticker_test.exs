@@ -1,7 +1,7 @@
 defmodule Dirk.TickerTest do
   use ExUnit.Case, async: true
   import Ecto.DateTime, only: [cast!: 1]
-  import Dirk.Ticker, only: [in_time_range: 3, in_time_range: 4]
+  import Utils.Ecto, only: [in_time_range: 3, in_time_range: 4]
   alias Ecto.Adapters.SQL.Sandbox
   alias Dirk.Ticker
   alias Dirk.Repo
