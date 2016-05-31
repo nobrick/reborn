@@ -18,7 +18,7 @@ defmodule Caravan.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :dirk, :huo],
+    [applications: [:logger, :dirk, :huo, :utils],
      mod: {Caravan, []}]
   end
 
