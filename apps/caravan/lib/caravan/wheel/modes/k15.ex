@@ -14,19 +14,19 @@ defmodule Caravan.Wheel.Modes.K15 do
 
   ## Helpers
 
-  def map_resp(body) do
+  defp map_resp(body) do
     body |> Enum.map(&to_ticker_map/1)
   end
 
-  def to_ticker_map([time, op, hi, lo, la, vo]) do
+  defp to_ticker_map([time, op, hi, lo, la, vo]) do
     %{op: op, la: la, hi: hi, lo: lo, vo: vo, time: time |> to_time}
   end
 
-  def insert_all(body) do
+  defp insert_all(body) do
     Repo.insert_all("k15_tickers", body)
   end
 
-  def to_time(str) do
+  defp to_time(str) do
     str
     |> capture_time_str
     |> Utils.Time.from_local
@@ -34,7 +34,7 @@ defmodule Caravan.Wheel.Modes.K15 do
   end
 
   @time_format ~r/\A(?<y>\d{4})(?<m>\d{2})(?<d>\d{2})(?<hh>\d{2})(?<mm>\d{2})(?<ss>\d{2})/
-  def capture_time_str(time_str) do
+  defp capture_time_str(time_str) do
     %{y: y, m: m, d: d, hh: hh, mm: mm, ss: ss} = @time_format
     |> Regex.named_captures(time_str)
     |> Enum.map(fn {k, v} -> {String.to_atom(k), String.to_integer(v)} end)
