@@ -14,3 +14,7 @@
 * [OOB Error @ Quora](https://www.quora.com/What-is-the-out-of-bag-error-in-Random-Forests)
 
 ### Timeout issue
+
+### Normalize K15
+* Keep deltas
+* Resolve duplicate K15 records with different `vo`
