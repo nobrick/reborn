@@ -16,5 +16,6 @@
 ### Timeout issue
 
 ### Normalize K15
-* Keep deltas
+* ~~Keep `d_la` deltas~~
+* Keep deltas for other attributes
 * Resolve duplicate K15 records with different `vo`

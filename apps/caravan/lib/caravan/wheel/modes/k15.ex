@@ -9,7 +9,7 @@ defmodule Caravan.Wheel.Modes.K15 do
   end
 
   def handle_pull(body) do
-    Repo.insert_all("k15_tickers", body |> map_resp)
+    Repo.insert_all("k15_tickers", body |> map_resp |> set_d_la)
   end
 
   ## Helpers
@@ -22,9 +22,21 @@ defmodule Caravan.Wheel.Modes.K15 do
     %{op: op, la: la, hi: hi, lo: lo, vo: vo, time: time |> to_time}
   end
 
-  defp insert_all(body) do
-    Repo.insert_all("k15_tickers", body)
+  defp set_d_la([head|tail]) do
+    head = head |> Map.put(:d_la, K15.get_d_la(head))
+    t = set_d_la(:rest, tail, {head})
+    IO.inspect t
+    t
   end
+
+  defp set_d_la(:rest, [%{la: curr_la} = head|tail], acc) do
+    %{la: prev_la} = elem(acc, tuple_size(acc) - 1)
+    d_la = (curr_la - prev_la) / prev_la
+    one = head |> Map.put(:d_la, d_la)
+    set_d_la(:rest, tail, acc |> Tuple.append(one))
+  end
+
+  defp set_d_la(:rest, [], final), do: Tuple.to_list(final)
 
   defp to_time(str) do
     str

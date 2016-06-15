@@ -36,7 +36,7 @@ defmodule Caravan.WheelTest do
     prev_count = count(K15)
     assert {@k15_count, nil} = Wheel.pull(wheel, :k15)
     assert count(K15) == prev_count + @k15_count
-    assert %K15{} = (from k in K15, limit: 1) |> Repo.one
+    assert %K15{d_la: _} = (from k in K15, limit: 1) |> Repo.one
   end
 
   test "fetch/2 :k15", %{wheel: wheel} do
