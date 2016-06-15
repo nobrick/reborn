@@ -7,11 +7,11 @@ defmodule Caravan.Wheel do
     GenServer.start_link(__MODULE__, :ok, opts)
   end
 
-  def pull(pid, mode \\ :simple, timeout \\ 5000) do
+  def pull(pid, mode \\ :simple, timeout \\ 8000) do
     GenServer.call(pid, {:pull, mode, []}, timeout)
   end
 
-  def fetch(pid, mode \\ :simple, timeout \\ 5000) do
+  def fetch(pid, mode \\ :simple, timeout \\ 8000) do
     GenServer.call(pid, {:pull, mode, fetch_only: true}, timeout)
   end
 
