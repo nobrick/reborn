@@ -12,4 +12,8 @@ defmodule Utils.TimeTest do
   test "to_unix_timestamp/1" do
     assert Time.to_unix_timestamp(@erl_datetime) == @unix_timestamp
   end
+
+  test "from_local/1" do
+    assert {{2016, 4, 22}, {22, 3, 51}} = Time.from_local(@erl_datetime)
+  end
 end

@@ -4,12 +4,12 @@ defmodule Caravan.WheelTest do
   alias Ecto.Adapters.SQL.Sandbox
   alias Caravan.Wheel
   alias Dirk.Ticker
+  alias Dirk.Ticker.K15
   alias Dirk.Repo
 
-  def count_ticker do
-    (from t in Ticker, select: count(t.id))
-    |> Repo.all
-    |> hd
+  def count(model) do
+    (from t in model, select: count(t.id))
+    |> Repo.one
   end
 
   setup do
@@ -20,14 +20,29 @@ defmodule Caravan.WheelTest do
   end
 
   test "pull/2 :simple", %{wheel: wheel} do
-    prev_count = count_ticker()
+    prev_count = count(Ticker)
     assert {:ok, %Ticker{}} = Wheel.pull(wheel)
-    assert count_ticker() == prev_count + 1
+    assert count(Ticker) == prev_count + 1
   end
 
   test "fetch/2 :simple", %{wheel: wheel} do
-    prev_count = count_ticker()
+    prev_count = count(Ticker)
     assert {:ok, %Ticker{}} = Wheel.fetch(wheel)
-    assert count_ticker() == prev_count
+    assert count(Ticker) == prev_count
+  end
+
+  @k15_count 300
+  test "pull/2 :k15", %{wheel: wheel} do
+    prev_count = count(K15)
+    assert {@k15_count, nil} = Wheel.pull(wheel, :k15)
+    assert count(K15) == prev_count + @k15_count
+    assert %K15{d_la: _} = (from k in K15, limit: 1) |> Repo.one
+  end
+
+  test "fetch/2 :k15", %{wheel: wheel} do
+    prev_count = count(K15)
+    assert {:ok, k15_list} = Wheel.fetch(wheel, :k15)
+    assert %{op: _, la: _, hi: _, lo: _, vo: _, time: _} = hd(k15_list)
+    assert count(Ticker) == prev_count
   end
 end
