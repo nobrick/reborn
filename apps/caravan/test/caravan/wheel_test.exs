@@ -43,6 +43,6 @@ defmodule Caravan.WheelTest do
     prev_count = count(K15)
     assert {:ok, k15_list} = Wheel.fetch(wheel, :k15)
     assert %{op: _, la: _, hi: _, lo: _, vo: _, time: _} = hd(k15_list)
-    assert count(Ticker) == prev_count
+    assert count(K15) == prev_count
   end
 end
