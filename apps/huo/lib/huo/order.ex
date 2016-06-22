@@ -11,7 +11,15 @@ defmodule Huo.Order do
     get(%{method: :get_account_info})
   end
 
-  defp get(%{method: method} = params, opts \\ []) do
+  def get_orders do
+    get(%{method: :get_orders, coin_type: 1})
+  end
+
+  def get_new_deal_orders do
+    get(%{method: :get_new_deal_orders, coin_type: 1})
+  end
+
+  defp get(%{method: _} = params, opts \\ []) do
     {digest_keys, _} = Keyword.pop(opts, :digest_keys, Map.keys(params))
     params = pack_params(params, digest_keys)
     case HTTPoison.get(@api_base, @api_header, params: params) do
