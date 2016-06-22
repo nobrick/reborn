@@ -12,4 +12,14 @@ defmodule Huo.OrderTest do
                    "net_asset"             => _,
                    "total"                 => _}} = Order.get_account_info
   end
+
+  test "get_orders" do
+    assert {:ok, list} = Order.get_orders
+    assert is_list(list)
+  end
+
+  test "get_new_deal_orders" do
+    assert {:ok, list} = Order.get_new_deal_orders
+    assert is_list(list)
+  end
 end
