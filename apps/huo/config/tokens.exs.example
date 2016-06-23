@@ -1,0 +1,5 @@
+use Mix.Config
+
+config :huo,
+  access_key: "5a7592ad-d2c7494c-84380639-13eec",
+  secret_key: "c2803cd6-5d82908b-a024ddc7-50d4d"
