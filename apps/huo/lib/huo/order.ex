@@ -7,15 +7,15 @@ defmodule Huo.Order do
   @access_key Application.get_env(:huo, :access_key)
   @secret_key Application.get_env(:huo, :secret_key)
 
-  def get_account_info do
+  def get_account do
     get(%{method: :get_account_info})
   end
 
-  def get_orders do
+  def get_ords do
     get(%{method: :get_orders, coin_type: 1})
   end
 
-  def get_order_info(id) do
+  def get_ord(id) do
     get(%{method: :order_info, coin_type: 1, id: id})
   end
 
@@ -35,15 +35,15 @@ defmodule Huo.Order do
     get(%{method: :sell_market, coin_type: 1, amount: amount})
   end
 
-  def cancel_order(id) do
+  def cancel_ord(id) do
     get(%{method: :cancel_order, coin_type: 1, id: id})
   end
 
-  def get_new_deal_orders do
+  def get_recent_ords do
     get(%{method: :get_new_deal_orders, coin_type: 1})
   end
 
-  def get_order_id_by_trd_id(id) do
+  def get_ord_id_by_trd_id(id) do
     get(%{method: :get_order_id_by_trade_id, coin_type: 1, trade_id: id})
   end
 
