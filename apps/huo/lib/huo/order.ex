@@ -15,8 +15,51 @@ defmodule Huo.Order do
     get(%{method: :get_orders, coin_type: 1})
   end
 
+  def get_order_info(id) do
+    get(%{method: :order_info, coin_type: 1, id: id})
+  end
+
+  def bid(price, amount) do
+    get(%{method: :buy, coin_type: 1, price: price, amount: amount})
+  end
+
+  def offer(price, amount) do
+    get(%{method: :sell, coin_type: 1, price: price, amount: amount})
+  end
+
+  def bid_mkt(amount) do
+    get(%{method: :buy_market, coin_type: 1, amount: amount})
+  end
+
+  def offer_mkt(amount) do
+    get(%{method: :sell_market, coin_type: 1, amount: amount})
+  end
+
+  def cancel_order(id) do
+    get(%{method: :cancel_order, coin_type: 1, id: id})
+  end
+
   def get_new_deal_orders do
     get(%{method: :get_new_deal_orders, coin_type: 1})
+  end
+
+  def get_order_id_by_trd_id(id) do
+    get(%{method: :get_order_id_by_trade_id, coin_type: 1, trade_id: id})
+  end
+
+  def withdraw(addr, amount) do
+    get(%{method: :withdraw_coin,
+          coin_type: 1,
+          withdraw_address: addr,
+          withdraw_amount: amount})
+  end
+
+  def cancel_withdrawal(id) do
+    get(%{method: :cancel_withdraw_coin, withdraw_coin_id: id})
+  end
+
+  def transfer(from, to, amount) do
+    get(%{account_from: from, account_to: to, amount: amount, coin_type: 1})
   end
 
   defp get(%{method: _} = params, opts \\ []) do
