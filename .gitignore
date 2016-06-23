@@ -6,3 +6,4 @@ erl_crash.dump
 /config/dev.exs
 /config/test.exs
 /config/prod.exs
+/apps/huo/config/tokens.exs
