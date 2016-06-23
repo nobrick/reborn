@@ -2,8 +2,8 @@
 ## Architecture
 * Dirk: data archiving
 * Caravan: data fetching
-* Azor: order monitoring and controlling
-* Mocha: pattern predicting
+* Azor: ord monitoring and controlling
+* Bran: pattern predicting
 * Huo: huo client
 * Utils: common utilities
 
