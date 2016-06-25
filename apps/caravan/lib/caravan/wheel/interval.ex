@@ -4,7 +4,7 @@ defmodule Caravan.Wheel.Interval do
   alias Caravan.Wheel
 
   @doc """
-    Starts Wheel.Interval instance.
+    Starts Caravan.Wheel.Interval instance.
 
     ## Options
 
