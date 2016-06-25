@@ -6,6 +6,7 @@ defmodule Caravan.WheelTest do
   alias Dirk.Ticker
   alias Dirk.Ticker.K15
   alias Dirk.Repo
+  alias Caravan.WheelTest.Handlers.AfterFetch
 
   def count(model) do
     (from t in model, select: count(t.id))
@@ -44,5 +45,25 @@ defmodule Caravan.WheelTest do
     assert {:ok, k15_list} = Wheel.fetch(wheel, :k15)
     assert %{op: _, la: _, hi: _, lo: _, vo: _, time: _} = hd(k15_list)
     assert count(K15) == prev_count
+  end
+
+  test "add_callback/4", %{wheel: wheel} do
+    assert :ok = Wheel.add_callback(wheel, :after_fetch, AfterFetch, :simple)
+    assert {:ok, %Ticker{}} = Wheel.fetch(wheel, :simple)
+    manager = Wheel.get_callback(wheel, :after_fetch, :simple)
+    ret = GenEvent.call(manager, AfterFetch, :state)
+    assert [{:simple, {:ok, %Ticker{}}}] = ret
+  end
+end
+
+defmodule Caravan.WheelTest.Handlers.AfterFetch do
+  use GenEvent
+
+  def handle_event({:after_fetch, mode, ret}, state) do
+    {:ok, [{mode, ret}|state]}
+  end
+
+  def handle_call(:state, state) do
+    {:ok, state, state}
   end
 end
