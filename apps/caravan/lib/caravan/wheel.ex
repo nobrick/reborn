@@ -47,11 +47,7 @@ defmodule Caravan.Wheel do
       error ->
         {:error, :huo_market, error}
     end
-
-    state
-    |> callback_for(mode)
-    |> GenEvent.sync_notify({:after_fetch, mode, ret})
-
+    notify(:after_fetch, state, mode, ret)
     {:reply, ret, state}
   end
 
@@ -66,6 +62,12 @@ defmodule Caravan.Wheel do
   end
 
   ## Helpers
+
+  defp notify(msg, state, mode, ret) do
+    state
+    |> callback_for(mode)
+    |> GenEvent.sync_notify({msg, mode, ret})
+  end
 
   defp callback_for(state, mode) when mode in [:simple, :k15] do
     get_in(state, [:callback_managers, :after_fetch, mode])
