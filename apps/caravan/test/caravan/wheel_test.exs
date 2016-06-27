@@ -48,10 +48,10 @@ defmodule Caravan.WheelTest do
   end
 
   test "add_callback/4", %{wheel: wheel} do
-    assert :ok = Wheel.add_callback(wheel, :after_fetch, AfterFetch, :simple)
+    assert :ok = Wheel.add_event_handler(wheel, :after_fetch, AfterFetch, :simple)
     assert {:ok, %Ticker{}} = Wheel.fetch(wheel, :simple)
-    manager = Wheel.get_callback(wheel, :after_fetch, :simple)
-    ret = GenEvent.call(manager, AfterFetch, :state)
+    manager = Wheel.get_event_manager(wheel, :after_fetch, :simple)
+    ret = GenEvent.call(manager, AfterFetch, :pop_state)
     assert [{:simple, {:ok, %Ticker{}}}] = ret
   end
 end
@@ -63,7 +63,7 @@ defmodule Caravan.WheelTest.Handlers.AfterFetch do
     {:ok, [{mode, ret}|state]}
   end
 
-  def handle_call(:state, state) do
-    {:ok, state, state}
+  def handle_call(:pop_state, state) do
+    {:ok, state, []}
   end
 end

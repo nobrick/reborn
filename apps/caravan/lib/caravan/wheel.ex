@@ -12,22 +12,34 @@ defmodule Caravan.Wheel do
 
   @timeout 8000
 
+  @doc """
+    Fetches data remotely and writes it into the database.
+  """
   def pull(pid, mode \\ :simple, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, @timeout)
     GenServer.call(pid, {:pull, mode, []}, timeout)
   end
 
+  @doc """
+    Fetches data for the given `mode`.
+  """
   def fetch(pid, mode \\ :simple, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, @timeout)
     GenServer.call(pid, {:pull, mode, fetch_only: true}, timeout)
   end
 
-  def add_callback(pid, :after_fetch, handler, mode \\ :simple, args \\ []) do
-    GenServer.call(pid, {:add_callback, :after_fetch, handler, mode, args})
+  @doc """
+    Adds event handler for after-fetching GenEvent manager.
+  """
+  def add_event_handler(pid, :after_fetch, handler, mode \\ :simple, args \\ []) do
+    GenServer.call(pid, {:add_event_handler, :after_fetch, handler, mode, args})
   end
 
-  def get_callback(pid, :after_fetch, mode) do
-    GenServer.call(pid, {:get_callback, :after_fetch, mode})
+  @doc """
+    Gets after-fetching GenEvent manager.
+  """
+  def get_event_manager(pid, :after_fetch, mode) do
+    GenServer.call(pid, {:get_event_manager, :after_fetch, mode})
   end
 
   ## Callbacks
@@ -51,13 +63,13 @@ defmodule Caravan.Wheel do
     {:reply, ret, state}
   end
 
-  def handle_call({:add_callback, :after_fetch, handler, mode, args},
+  def handle_call({:add_event_handler, :after_fetch, handler, mode, args},
       _from, state) do
     ret = state |> callback_for(mode) |> GenEvent.add_handler(handler, args)
     {:reply, ret, state}
   end
 
-  def handle_call({:get_callback, :after_fetch, mode}, _from, state) do
+  def handle_call({:get_event_manager, :after_fetch, mode}, _from, state) do
     {:reply, callback_for(state, mode), state}
   end
 
