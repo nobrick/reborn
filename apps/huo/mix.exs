@@ -35,6 +35,6 @@ defmodule Huo.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:httpoison, "~> 0.8.0"}, {:utils, in_umbrella: true}]
+    [{:httpoison, "~> 0.8.0"}, {:poison, "~> 2.0"}, {:utils, in_umbrella: true}]
   end
 end
