@@ -6,14 +6,14 @@ defmodule Utils.Time do
 
   def from_unix_timestamp(timestamp) when is_integer(timestamp) do
     timestamp
-    |> +(@epoch)
+    |> Kernel.+(@epoch)
     |> :calendar.gregorian_seconds_to_datetime
   end
 
   def to_unix_timestamp(datetime) when is_tuple(datetime) do
     datetime
     |> :calendar.datetime_to_gregorian_seconds
-    |> -(@epoch)
+    |> Kernel.-(@epoch)
   end
 
   def from_local(datetime) when is_tuple(datetime) do
