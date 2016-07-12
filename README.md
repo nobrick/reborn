@@ -3,7 +3,7 @@
 * Dirk: data archiving
 * Caravan: data fetching
 * Azor: ord monitoring and controlling
-* Bran: pattern predicting
+* Daydream: pattern predicting
 * Huo: huo client
 * Utils: common utilities
 
