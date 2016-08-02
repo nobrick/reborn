@@ -15,4 +15,27 @@ defmodule Utils.Param do
     |> Enum.sort
     |> Enum.map_join("&", fn {k, v} -> "#{k}=#{v}" end)
   end
+
+  @doc """
+    Converts the map response into formatted form.
+    
+    The method transitions number string values into float values.
+  """
+  def format_resp(resp) when is_map(resp) do
+    for {k, v} <- resp, into: %{}, do: {k, to_float(v)}
+  end
+
+  def format_resp(resp), do: resp
+
+  ## Helpers
+
+  defp to_float(str) when is_binary(str) do
+    if Regex.match?(~r/\d+\.\d+/, str) do
+      String.to_float(str)
+    else
+      str
+    end
+  end
+
+  defp to_float(str), do: str
 end

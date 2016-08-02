@@ -27,6 +27,13 @@ defmodule Huo.Order do
     get(%{method: :sell, coin_type: 1, price: p, amount: amt})
   end
 
+  @doc """
+    Launches bi_mkt.
+
+    Returns a tuple in the following form when succeeds:
+
+        {:ok, %{"id" => 1689495778, "result" => "success"}}
+  """
   def bi_mkt(amt) do
     get(%{method: :buy_market, coin_type: 1, amount: amt})
   end
@@ -62,6 +69,8 @@ defmodule Huo.Order do
     get(%{account_from: from, account_to: to, amount: amt, coin_type: 1})
   end
 
+  ## Helpers
+
   defp get(%{method: _} = params, opts \\ []) do
     {digest_keys, _} = Keyword.pop(opts, :digest_keys, Map.keys(params))
     params = pack_params(params, digest_keys)
@@ -76,7 +85,9 @@ defmodule Huo.Order do
   end
 
   defp normalize_json(json) do
-    Poison.decode!(json)
+    json
+    |> Poison.decode!
+    |> Param.format_resp
   end
 
   defp pack_params(params, digest_keys) do
