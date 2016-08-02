@@ -1,5 +1,6 @@
 defmodule Dirk.Ord do
   use Ecto.Schema
+  import Ecto.Changeset
 
   schema "ords" do
     field :ord_id,        :integer
@@ -21,21 +22,22 @@ defmodule Dirk.Ord do
   @types           ~w(bi of bi_mkt of_mkt)
   @remote_statuses ~w(no_contract partial_done done canceled _deprecated
                       exception partial_canceled in_queue)
-  @states          ~w()
+  @states          ~w(initial processing completed void)
 
   def changeset(model, params) do
     model
     |> cast(params, @allowed_fields)
     |> validate_required(@required_fields)
-    |> validate_inclusion(:remote_status, @remote_statuses)
     |> validate_inclusion(:type, @types)
+    |> validate_inclusion(:remote_status, @remote_statuses)
+    |> validate_inclusion(:state, @states)
   end
 
   def remote_status(index) when index in 0..7 do
-    elem(@remote_statuses, index)
+    Enum.at(@remote_statuses, index)
   end
 
   def type(index) when index in 1..4 do
-    elem(@types, index - 1)
+    Enum.at(@types, index - 1)
   end
 end
