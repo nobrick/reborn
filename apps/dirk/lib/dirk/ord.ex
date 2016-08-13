@@ -22,7 +22,7 @@ defmodule Dirk.Ord do
   @types           ~w(bi of bi_mkt of_mkt)
   @remote_statuses ~w(no_contract partial_done done canceled _deprecated
                       exception partial_canceled in_queue)
-  @states          ~w(initial processing completed void)
+  @states          ~w(initial watched processing completed void)
 
   def changeset(model, params) do
     model
