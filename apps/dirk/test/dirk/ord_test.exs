@@ -3,7 +3,7 @@ defmodule Dirk.OrdTest do
   alias Dirk.Ord
 
   test "remote_status/1" do
-    assert "no_contract" = Ord.remote_status(0)
+    assert "undone" = Ord.remote_status(0)
     assert "in_queue" = Ord.remote_status(7)
   end
 

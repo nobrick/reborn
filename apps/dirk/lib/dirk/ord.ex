@@ -20,9 +20,9 @@ defmodule Dirk.Ord do
   @allowed_fields  ~w(ord_id ord_p ord_amt processed_p processed_amt vot total
                       fee type state remote_status)
   @types           ~w(bi of bi_mkt of_mkt)
-  @remote_statuses ~w(no_contract partial_done done canceled _deprecated
-                      exception partial_canceled in_queue)
-  @states          ~w(initial watched processing completed void)
+  @remote_statuses ~w(undone partial_done done canceled _deprecated exception
+                      partial_canceled in_queue)
+  @states          ~w(initial watched processing pending completed void)
 
   def changeset(model, params) do
     model
