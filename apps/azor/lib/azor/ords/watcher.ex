@@ -5,15 +5,10 @@ defmodule Azor.Ords.Watcher do
   alias Azor.Ords.Manager
   alias Caravan.Wheel.Simple.Broadcaster
 
-  @conditions [:la_above_p, :la_below_p]
-
-  def start_link(%{ord: _, condition: condition} = args, opts \\ [])
-      when condition in @conditions do
+  def start_link(%{ord: _} = args, opts \\ []) do
     args = Map.put_new(args, :ords_manager, Manager)
     GenStage.start_link(__MODULE__, args, opts)
   end
-
-  def permitted_conds, do: @conditions
 
   ## Callbacks
 
@@ -21,7 +16,7 @@ defmodule Azor.Ords.Watcher do
     {:consumer, args, subscribe_to: [Broadcaster]}
   end
 
-  def handle_events(events, _from, %{ord: %{id: id}, condition: condition,
+  def handle_events(events, _from, %{ord: %{id: id}, cond: condition,
                                      ords_manager: manager} = state) do
     for event <- events do
       {:after_fetch, :simple, ret} = event
@@ -38,7 +33,31 @@ defmodule Azor.Ords.Watcher do
     {:noreply, [], state}
   end
 
+  ## Helpers
+
   def satisfy?(ticker, condition, state)
-  def satisfy?(%{la: la}, :la_above_p, %{ord: %{p: p}}), do: la >= p
-  def satisfy?(%{la: la}, :la_below_p, %{ord: %{p: p}}), do: la <= p
+
+  def satisfy?(_ticker, {:now}, _state), do: true
+  def satisfy?(%{la: la}, {:la_above_p}, %{ord: %{p: p}}), do: la >= p
+  def satisfy?(%{la: la}, {:la_below_p}, %{ord: %{p: p}}), do: la <= p
+  def satisfy?(%{la: la}, {:la_above, p}, _), do: la >= p
+  def satisfy?(%{la: la}, {:la_below, p}, _), do: la <= p
+
+  def satisfy?(ticker, {:all, sub_conds}, state) do
+    Enum.all?(sub_conds, & satisfy?(ticker, &1, state))
+  end
+
+  def satisfy?(ticker, {:any, sub_conds}, state) do
+    Enum.any?(sub_conds, & satisfy?(ticker, &1, state))
+  end
+
+  def satisfy?(ticker, {:ord, :on_completed, ord_id},
+               %{ords_manager: manager}) do
+    Manager.get_status(manager, ord_id) == :completed
+  end
+
+  def satisfy?(_ticker, {:ord, :in_status, ord_id, status},
+               %{ords_manager: manager}) do
+    Manager.get_status(manager, ord_id) == status
+  end
 end
