@@ -4,20 +4,20 @@ defmodule Caravan.Wheel.Interval do
   alias Caravan.Wheel
 
   @doc """
-    Starts Caravan.Wheel.Interval instance.
+  Starts Caravan.Wheel.Interval instance.
 
-    ## Options
+  ## Options
 
-    - `interval_sup`: The `Task.Supervisor` for supervising periodically
-    pulling processes. `Caravan.Wheel.Interval.Supervisor` by default.
+  - `interval_sup`: The `Task.Supervisor` for supervising periodically
+  pulling processes. `Caravan.Wheel.Interval.Supervisor` by default.
 
-    - `wheel`: The wheel instance for pulling. `Caravan.Wheel` by default.
+  - `wheel`: The wheel instance for pulling. `Caravan.Wheel` by default.
 
-    - `mode`: The mode for pulling. :simple by default.
+  - `mode`: The mode for pulling. :simple by default.
 
-    - `pulling_interval`: The interval to trigger pulling. 5000 by default.
+  - `pulling_interval`: The interval to trigger pulling. 5000 by default.
 
-    - `test_process`: The message monitoring process for testing purposes.
+  - `test_process`: The message monitoring process for testing purposes.
   """
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, extract_options(opts))
