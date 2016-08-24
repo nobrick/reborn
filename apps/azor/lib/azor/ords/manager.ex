@@ -17,39 +17,53 @@ defmodule Azor.Ords.Manager do
   end
 
   @doc """
-  Sets bi watch.
+  Adds bi watch.
 
   Examples:
 
       iex> Manager.add_bi(Manager, 3000, 0.01, %{cond: {:p_below, 3}})
-      :ok
+      {:ok, 7}
 
       iex> Manager.add_bi(Manager, 3000, 0.01, %{cond: {:p_below_p}})
-      :ok
+      {:ok, 8}
   """
   def add_bi(server, p, amt, watch) do
     GenServer.call(server, {:add_bi, p, amt, watch})
   end
 
   @doc """
-  Sets of watch.
+  Adds of watch.
   """
   def add_of(server, p, amt, watch) do
     GenServer.call(server, {:add_of, p, amt, watch})
   end
 
   @doc """
-  Set bi_mkt watch.
+  Adds bi_mkt watch.
   """
   def add_bi_mkt(server, amt, watch) do
     GenServer.call(server, {:add_bi_mkt, amt, watch})
   end
 
   @doc """
-  Set of_mkt watch.
+  Adds of_mkt watch.
   """
   def add_of_mkt(server, amt, watch) do
     GenServer.call(server, {:add_of_mkt, amt, watch})
+  end
+
+  @doc """
+  Adds batch commands.
+
+  Examples:
+
+      iex> Manager.batch(Manager, {{:on_completed,
+                                   {:add_bi, 3010, 0.01, %{cond: {:now}}}},
+                                   [{:add_of_mkt, 0.01, %{cond: {:la_below_p}}},
+                                    {:add_of, 3020, 0.01, %{cond: {:now}}}]})
+  """
+  def batch(server, args) do
+    GenServer.call(server, {:batch, args})
   end
 
   @doc """
