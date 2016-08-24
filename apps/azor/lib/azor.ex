@@ -1,5 +1,6 @@
 defmodule Azor do
   use Application
+  alias Azor.Ords.{Manager, WatcherSupervisor}
 
   @simple_handler   Azor.Handlers.Simple.AfterFetch
   @handlers_watcher Azor.Handlers.Watcher
@@ -8,8 +9,9 @@ defmodule Azor do
     import Supervisor.Spec, warn: false
 
     children = [
-      supervisor(Azor.Ords.WatcherSupervisor, [], restart: :permanent),
-      worker(Azor.Ords.Manager, [[name: Azor.Ords.Manager]]),
+      supervisor(WatcherSupervisor, [[name: WatcherSupervisor]],
+                 restart: :permanent),
+      worker(Manager, [[name: Manager]]),
       worker(@handlers_watcher,
              handlers_watcher_args(:simple, @simple_handler))
     ]

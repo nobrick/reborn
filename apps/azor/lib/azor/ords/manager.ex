@@ -1,8 +1,7 @@
 defmodule Azor.Ords.Manager do
   use GenServer
   import Logger, only: [info: 1]
-  alias Azor.Ords.Watcher
-  alias Azor.Ords.Tracker
+  alias Azor.Ords.{Tracker, WatcherSupervisor}
   alias Huo.Order
 
   @statuses [:initial, :watched, :processing, :pending, :completed, :void]
@@ -21,7 +20,7 @@ defmodule Azor.Ords.Manager do
 
   Examples:
 
-      iex> Manager.add_bi(Manager, 3000, 0.01, %{cond: {:p_below, 3}})
+      iex> Manager.add_bi(Manager, 3000, 0.01, %{cond: {:p_below, 3010}})
       {:ok, 7}
 
       iex> Manager.add_bi(Manager, 3000, 0.01, %{cond: {:p_below_p}})
@@ -58,9 +57,9 @@ defmodule Azor.Ords.Manager do
   Examples:
 
       iex> Manager.batch(Manager, {{:on_completed,
-                                   {:add_bi, 3010, 0.01, %{cond: {:now}}}},
-                                   [{:add_of_mkt, 0.01, %{cond: {:la_below_p}}},
-                                    {:add_of, 3020, 0.01, %{cond: {:now}}}]})
+                         {:add_bi, 3010, 0.01, %{cond: {:now}}}},
+                         [{:add_of_mkt, 0.01, %{cond: {:la_below_p}}},
+                          {:add_of, 3020, 0.01, %{cond: {:now}}}]})
   """
   def batch(server, args) do
     GenServer.call(server, {:batch, args})
@@ -169,7 +168,7 @@ defmodule Azor.Ords.Manager do
 
   defp transition(state, %{id: id, watch: %{cond: condition}} = ord,
                   {:initial, :watched}, _info) do
-    {:ok, _} = Watcher.start_link(%{ord: ord, cond: condition})
+    {:ok, _pid} = WatcherSupervisor.start_child(%{ord: ord, cond: condition})
     update_status(state, id, :watched)
   end
 
