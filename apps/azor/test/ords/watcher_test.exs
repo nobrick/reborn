@@ -7,7 +7,8 @@ defmodule Azor.Ords.WatcherTest do
 
     def init(:ok) do
       {:ok, %{ords: %{0 => %{status: :completed},
-                      1 => %{status: :pending}}}}
+                      1 => %{status: :pending},
+                      2 => %{status: :completed}}}}
     end
 
     def handle_call(request, from, state) do
@@ -15,7 +16,7 @@ defmodule Azor.Ords.WatcherTest do
     end
   end
 
-  describe "satisfy/3" do
+  describe "satisfy?/3 non :ord clausess" do
     test "{:now}" do
       assert satisfy?(nil, {:now}, nil)
     end
@@ -45,20 +46,46 @@ defmodule Azor.Ords.WatcherTest do
       refute satisfy?(%{la: 4001}, {:any, [{:la_above, 4002},
                                           {:la_below, 4000}]}, nil)
     end
+  end
 
-    test "{:ord, :on_completed, ord_id}" do
-      {:ok, manager} = GenServer.start_link(Manager, :ok)
-      assert satisfy?(nil, {:ord, :on_completed, 0}, %{ords_manager: manager})
-      refute satisfy?(nil, {:ord, :on_completed, 1}, %{ords_manager: manager})
-      refute satisfy?(nil, {:ord, :on_completed, 2}, %{ords_manager: manager})
+  describe "satisfy?/3 :ord clauses" do
+    setup [:start_manager]
+
+    test "{:ord, :on_completed, ord_id}", %{state: state} do
+      assert satisfy?(nil, {:ord, :on_completed, 0}, state)
+      refute satisfy?(nil, {:ord, :on_completed, 1}, state)
+      refute satisfy?(nil, {:ord, :on_completed, 11}, state)
     end
 
-    test "{:ord, :in_status, ord_id, status}" do
-      {:ok, manager} = GenServer.start_link(Manager, :ok)
-      state = %{ords_manager: manager}
+    test "{:ord, :in_status, ord_id, status}", %{state: state} do
       assert satisfy?(nil, {:ord, :in_status, 0, :completed}, state)
       refute satisfy?(nil, {:ord, :in_status, 1, :completed}, state)
-      refute satisfy?(nil, {:ord, :in_status, 2, :completed}, state)
+      refute satisfy?(nil, {:ord, :in_status, 11, :completed}, state)
     end
+
+    test "{:ord, :on_completed, ids}", %{state: state} do
+      assert satisfy?(nil, {:ord, :on_completed, [0, 2]}, state)
+      refute satisfy?(nil, {:ord, :on_completed, [0, 1]}, state)
+      refute satisfy?(nil, {:ord, :on_completed, [0, 11]}, state)
+    end
+
+    test "{:ord, :in_status, ids, status}", %{state: state} do
+      assert satisfy?(nil, {:ord, :in_status, [0, 2], :completed}, state)
+      refute satisfy?(nil, {:ord, :in_status, [0, 1], :completed}, state)
+      refute satisfy?(nil, {:ord, :in_status, [0, 11], :completed}, state)
+    end
+
+    test "{:ord, :in_status, status_ids_map}", %{state: state} do
+      assert satisfy?(nil, {:ord, :in_status, %{completed: [0, 2],
+                      pending: [1]}}, state)
+      refute satisfy?(nil, {:ord, :in_status, %{completed: [0, 1]}}, state)
+      refute satisfy?(nil, {:ord, :in_status, %{completed: [0, 2],
+                      pending: [1, 11]}}, state)
+    end
+  end
+
+  def start_manager(_context) do
+    {:ok, manager} = GenServer.start_link(Manager, :ok)
+    {:ok, %{state: %{ords_manager: manager}}}
   end
 end

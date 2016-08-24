@@ -51,13 +51,29 @@ defmodule Azor.Ords.Watcher do
     Enum.any?(sub_conds, & satisfy?(ticker, &1, state))
   end
 
-  def satisfy?(ticker, {:ord, :on_completed, ord_id},
-               %{ords_manager: manager}) do
+  def satisfy?(_ticker, {:ord, :on_completed, ord_id},
+      %{ords_manager: manager}) when is_integer(ord_id) do
     Manager.get_status(manager, ord_id) == :completed
   end
 
+  def satisfy?(ticker, {:ord, :on_completed, ids}, state) when is_list(ids) do
+    Enum.all?(ids, & satisfy?(ticker, {:ord, :on_completed, &1}, state))
+  end
+
   def satisfy?(_ticker, {:ord, :in_status, ord_id, status},
-               %{ords_manager: manager}) do
+      %{ords_manager: manager}) when is_integer(ord_id) do
     Manager.get_status(manager, ord_id) == status
+  end
+
+  def satisfy?(ticker, {:ord, :in_status, ids, status}, state)
+      when is_list(ids) do
+    Enum.all?(ids, & satisfy?(ticker, {:ord, :in_status, &1, status}, state))
+  end
+
+  def satisfy?(ticker, {:ord, :in_status, status_ids_map}, state)
+      when is_map(status_ids_map) do
+    Enum.all?(status_ids_map, fn {status, ids} ->
+      satisfy?(ticker, {:ord, :in_status, ids, status}, state)
+    end)
   end
 end
