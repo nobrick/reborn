@@ -32,8 +32,10 @@ defmodule Caravan.Wheel do
   @doc """
   Adds event handler for after-fetching GenEvent manager.
   """
-  def add_event_handler(pid, :after_fetch, handler, mode \\ :simple, args \\ []) do
-    GenServer.call(pid, {:add_event_handler, :after_fetch, handler, mode, args})
+  def add_event_handler(pid, :after_fetch, handler,
+                        mode \\ :simple, args \\ []) do
+    GenServer.call(pid, {:add_event_handler, :after_fetch,
+                         handler, mode, args})
   end
 
   @doc """
@@ -65,7 +67,7 @@ defmodule Caravan.Wheel do
   end
 
   def handle_call({:add_event_handler, :after_fetch, handler, mode, args},
-      _from, state) do
+                  _from, state) do
     ret = state |> callback_for(mode) |> GenEvent.add_handler(handler, args)
     {:reply, ret, state}
   end
