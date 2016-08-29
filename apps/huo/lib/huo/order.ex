@@ -74,16 +74,24 @@ defmodule Huo.Order do
   @doc """
   Add BI_MKT ord.
 
+  ## Arguments
+  
+      `cny_amt` - CNY amt.
+
   Returns a tuple in the following form when succeeds:
 
       {:ok, %{"id" => 1689495778, "result" => "success"}}
   """
-  def bi_mkt(amt) do
-    get(%{method: :buy_market, coin_type: 1, amount: amt})
+  def bi_mkt(cny_amt) do
+    get(%{method: :buy_market, coin_type: 1, amount: cny_amt})
   end
 
   @doc """
   Add OF_MKT ord.
+
+  ## Arguments
+
+      `amt` - BTC amt.
 
   Returns a tuple in the following form when succeeds:
 
