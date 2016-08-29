@@ -19,6 +19,11 @@
 * ~~Implement WatcherSupervisor~~
 * Sync the states with persistence (PostgreSQL or Mnesia, ETS, DETS or others)
 * Take note of TDD and finish up unit tests
+* Use ex_machina for fixtures, ex. ords
+* Timeout for Azor.Ords.Watcher and Tracker
+
+### Issues
+* The Ords.Manager pid stored in Watcher may be outdated when Manager crashes.
 
 ### Random forest
 * [CloudForest](https://github.com/ryanbressler/CloudForest)
@@ -34,3 +39,4 @@
 
 ### Further reading
 [CAP](https://codahale.com/you-cant-sacrifice-partition-tolerance/)
+[Alchemist.vim](https://github.com/slashmili/alchemist.vim)
