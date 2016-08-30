@@ -1,14 +1,23 @@
 defmodule Azor.Ords.WatcherTest do
   use ExUnit.Case, async: true
   import Azor.Ords.Watcher, only: [satisfy?: 3]
+  import Utils.Access, only: [put_present: 3, put_present: 4]
+  import Caravan.Wheel.Broadcaster, only: [sync_notify: 2]
+  alias Caravan.Wheel.Broadcaster
+  alias Azor.Ords.Watcher
 
   defmodule Manager do
     use GenServer
 
-    def init(:ok) do
-      {:ok, %{ords: %{0 => %{status: :completed},
-                      1 => %{status: :pending},
-                      2 => %{status: :completed}}}}
+    def init(args \\ %{}) do
+      broadcaster = args[:watcher][:subscribe_to]
+      state = %{ords: %{0 => %{id: 0, status: :completed},
+                        1 => %{id: 1, status: :pending},
+                        2 => %{id: 2, status: :completed},
+                        3 => %{id: 3, status: :watched}}}
+      state = put_present(state, [:watcher], broadcaster,
+                          & %{subscribe_to: &1})
+      {:ok, state}
     end
 
     def handle_call(request, from, state) do
@@ -84,8 +93,37 @@ defmodule Azor.Ords.WatcherTest do
     end
   end
 
-  def start_manager(_context) do
-    {:ok, manager} = GenServer.start_link(Manager, :ok)
-    {:ok, %{state: %{ords_manager: manager}}}
+  describe "watcher" do
+    setup [:start_broadcaster, :start_manager, :start_watcher]
+
+    test "terminates itself when satisfied", %{watcher: watcher,
+                                               broadcaster: broadcaster} do
+      ticker = %{la: 3000}
+      sync_notify(broadcaster, {:after_fetch, :simple, {:ok, ticker}})
+      assert_receive({:watcher, :satisfied, ^watcher, _oid}, 1000)
+      Process.monitor(watcher)
+      assert_receive({:DOWN, _, :process, ^watcher, _})
+    end
+  end
+
+  defp start_broadcaster(_context) do
+    {:ok, pid} = Broadcaster.start_link
+    {:ok, broadcaster: pid}
+  end
+
+  defp start_manager(context) do
+    args = put_present(%{}, [:watcher], context[:broadcaster],
+                       & %{subscribe_to: &1})
+    {:ok, pid} = GenServer.start_link(Manager, args)
+    {:ok, %{state: %{ords_manager: pid}, manager: pid}}
+  end
+
+  defp start_watcher(context) do
+    args =
+      %{ord: %{id: 3}, cond: {:now}, test_process: self}
+      |> put_present([:ords_manager], context[:manager])
+      |> put_present([:subscribe_to], context[:broadcaster])
+    {:ok, pid} = Watcher.start_link(args)
+    {:ok, watcher: pid}
   end
 end

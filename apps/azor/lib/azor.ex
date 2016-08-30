@@ -9,14 +9,14 @@ defmodule Azor do
     import Supervisor.Spec, warn: false
 
     children = [
+      worker(Manager, [%{}, [name: Manager]]),
       supervisor(WatcherSupervisor, [[name: WatcherSupervisor]],
                  restart: :permanent),
-      worker(Manager, [[name: Manager]]),
       worker(@handlers_watcher,
              handlers_watcher_args(:simple, @simple_handler))
     ]
 
-    opts = [strategy: :one_for_one, name: Azor.Supervisor]
+    opts = [strategy: :rest_for_one, name: Azor.Supervisor]
     Supervisor.start_link(children, opts)
   end
 

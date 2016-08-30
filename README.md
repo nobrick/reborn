@@ -23,7 +23,8 @@
 * Timeout for Azor.Ords.Watcher and Tracker
 
 ### Issues
-* The Ords.Manager pid stored in Watcher may be outdated when Manager crashes.
+* Ords.Manager may crash
+* ~~The Manager pid stored in Watcher may be outdated when Manager crashes~~
 
 ### Random forest
 * [CloudForest](https://github.com/ryanbressler/CloudForest)
