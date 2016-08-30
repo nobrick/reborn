@@ -6,14 +6,18 @@ defmodule Azor.Ords.Watcher do
   alias Caravan.Wheel.Simple.Broadcaster
 
   def start_link(%{ord: _} = args, opts \\ []) do
-    args = Map.put_new(args, :ords_manager, Manager)
     GenStage.start_link(__MODULE__, args, opts)
   end
 
   ## Callbacks
 
   def init(args) do
-    {:consumer, args, subscribe_to: [Broadcaster]}
+    args =
+      args
+      |> Map.put_new(:test_process, nil)
+      |> Map.put_new(:ords_manager, Manager)
+    broadcaster = Map.get(args, :subscribe_to, Broadcaster)
+    {:consumer, args, subscribe_to: [broadcaster]}
   end
 
   def handle_events(events, _from, %{ord: %{id: id}, cond: condition,
@@ -24,13 +28,18 @@ defmodule Azor.Ords.Watcher do
         {:ok, ticker} ->
           if satisfy?(ticker, condition, state) do
             Manager.sync_ord(manager, id, :processing, %{ticker: ticker})
-            GenStage.stop(self)
+            notify_test_process({:watcher, :satisfied, self, id}, state)
+            exit(:normal)
           end
         error ->
           IO.inspect error
       end
     end
     {:noreply, [], state}
+  end
+
+  defp notify_test_process(msg, %{test_process: test_process} = _state) do
+    if test_process, do: send(test_process, msg)
   end
 
   ## Helpers

@@ -1,8 +1,8 @@
 defmodule Azor.Ords.Manager do
   use GenServer
   import Logger, only: [info: 1]
+  import Utils.Access, only: [put_present: 3, put_present: 4]
   alias Azor.Ords.{Tracker, WatcherSupervisor}
-  alias Huo.Order
 
   @statuses [:initial, :watched, :processing, :pending, :completed, :void]
 
@@ -10,9 +10,14 @@ defmodule Azor.Ords.Manager do
 
   @doc """
   Starts Azor.Ords.Manager instance.
+
+  ## Options
+
+    * `:ord_client` - The huo order client module. Defaults to `Huo.Order`.
+      This option is useful for testing.
   """
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, :ok, opts)
+  def start_link(args \\ %{}, opts \\ []) do
+    GenServer.start_link(__MODULE__, args, opts)
   end
 
   @doc """
@@ -20,10 +25,10 @@ defmodule Azor.Ords.Manager do
 
   Examples:
 
-      iex> Manager.add_bi(Manager, 3000, 0.01, %{cond: {:p_below, 3010}})
+      iex> Manager.add_bi(Manager, 3000, 0.01, %{cond: {:la_below, 3010}})
       {:ok, 7}
 
-      iex> Manager.add_bi(Manager, 3000, 0.01, %{cond: {:p_below_p}})
+      iex> Manager.add_bi(Manager, 3000, 0.01, %{cond: {:la_below_p}})
       {:ok, 8}
   """
   def add_bi(server, p, amt, watch) do
@@ -39,9 +44,11 @@ defmodule Azor.Ords.Manager do
 
   @doc """
   Adds bi_mkt watch.
+
+  Note the `cny_amt` argument takes cny unit.
   """
-  def add_bi_mkt(server, amt, watch) do
-    GenServer.call(server, {:add_bi_mkt, amt, watch})
+  def add_bi_mkt(server, cny_amt, watch) do
+    GenServer.call(server, {:add_bi_mkt, cny_amt, watch})
   end
 
   @doc """
@@ -70,6 +77,14 @@ defmodule Azor.Ords.Manager do
   """
   def sync_ord(server, id, status, info \\ %{}) when status in @statuses do
     GenServer.call(server, {:sync_ord, id, status, info})
+  end
+
+  @doc """
+  Cancels ord and terminates the associated watcher/tracker instances.
+
+  This function will cancel ord remotely if possible.
+  """
+  def cancel_ord(_server, _id) do
   end
 
   @doc """
@@ -106,8 +121,14 @@ defmodule Azor.Ords.Manager do
 
   ## Callbacks
 
-  def init(:ok) do
-    {:ok, %{ords: %{}, ords_count: 0}}
+  def init(args) do
+    state = %{ords:         %{},
+              ords_count:   0,
+              ord_client:   Map.get(args, :ord_client, Huo.Order),
+              test_process: Map.get(args, :test_process)}
+    state = put_present(state, :watcher, args[:watcher][:subscribe_to],
+                        & %{subscribe_to: &1})
+    {:ok, state}
   end
 
   def handle_call({action, p, amt, watch}, _from, state)
@@ -119,7 +140,6 @@ defmodule Azor.Ords.Manager do
 
   def handle_call({action, amt, watch}, _from, state)
       when action in [:add_bi_mkt, :add_of_mkt] do
-    # TODO: Implement the actions.
     {id, state} = add_ord(state, %{action: action, amt: amt, watch: watch})
     {:reply, {:ok, id}, state}
   end
@@ -166,9 +186,12 @@ defmodule Azor.Ords.Manager do
          |> update_in([:ords_count], &(&1+1))}
   end
 
-  defp transition(state, %{id: id, watch: %{cond: condition}} = ord,
-                  {:initial, :watched}, _info) do
-    {:ok, _pid} = WatcherSupervisor.start_child(%{ord: ord, cond: condition})
+  defp transition(%{test_process: test_process} = state, %{id: id,
+       watch: %{cond: condition}} = ord, {:initial, :watched}, _info) do
+    args = %{ord: ord, cond: condition, test_process: test_process}
+           |> put_present(:ords_manager, test_process, self)
+           |> put_present(:subscribe_to, state[:watcher][:subscribe_to])
+    {:ok, _pid} = WatcherSupervisor.start_child(args)
     update_status(state, id, :watched)
   end
 
@@ -208,9 +231,9 @@ defmodule Azor.Ords.Manager do
     put_in(state, [:ords, ord_id, attr], value)
   end
 
-  defp process_ord(state, id) do
+  defp process_ord(%{ord_client: client} = state, id) do
     ord = get_in(state, [:ords, id])
-    case do_process_ord(ord) do
+    case do_process_ord(client, ord) do
       {:ok, %{"id" => remote_id, "result" => "success"}} ->
         args = %{remote_id: remote_id}
         transition(state, ord, {:processing, :pending}, args)
@@ -219,11 +242,19 @@ defmodule Azor.Ords.Manager do
     end
   end
 
-  defp do_process_ord(%{action: :add_bi, p: p, amt: amt} = _ord) do
-    Order.bi(p, amt)
+  defp do_process_ord(client, %{action: :add_bi, p: p, amt: amt}) do
+    client.bi(p, amt)
   end
 
-  defp do_process_ord(%{action: :add_of, p: p, amt: amt} = _ord) do
-    Order.of(p, amt)
+  defp do_process_ord(client, %{action: :add_of, p: p, amt: amt}) do
+    client.of(p, amt)
+  end
+
+  defp do_process_ord(client, %{action: :add_bi_mkt, amt: amt}) do
+    client.bi_mkt(amt)
+  end
+
+  defp do_process_ord(client, %{action: :add_of_mkt, amt: amt}) do
+    client.of_mkt(amt)
   end
 end
