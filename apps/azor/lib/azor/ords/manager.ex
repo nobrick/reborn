@@ -84,7 +84,8 @@ defmodule Azor.Ords.Manager do
 
   This function will cancel ord remotely if possible.
   """
-  def cancel_ord(_server, _id) do
+  def cancel_ord(server, id) do
+    GenServer.call(server, {:cancel_ord, id})
   end
 
   @doc """
@@ -125,7 +126,8 @@ defmodule Azor.Ords.Manager do
     state = %{ords:         %{},
               ords_count:   0,
               ord_client:   Map.get(args, :ord_client, Huo.Order),
-              test_process: Map.get(args, :test_process)}
+              test_process: Map.get(args, :test_process),
+              p_context:    Map.get(args, :p_context)}
     state = put_present(state, :watcher, args[:watcher][:subscribe_to],
                         & %{subscribe_to: &1})
     {:ok, state}
@@ -147,6 +149,11 @@ defmodule Azor.Ords.Manager do
   def handle_call({:sync_ord, id, status, info}, _from, state) do
     %{status: org_status} = ord = get_in(state, [:ords, id])
     {:reply, :ok, transition(state, ord, {org_status, status}, info)}
+  end
+
+  def handle_call({:cancel_ord, id}, _from, state) do
+    WatcherSupervisor.terminate_child(id, Map.get(state, :p_context))
+    {:reply, :ok, update_status(state, id, :void)}
   end
 
   def handle_call({:get_ord, id}, _from, %{ords: ords} = state) do
@@ -191,6 +198,7 @@ defmodule Azor.Ords.Manager do
     args = %{ord: ord, cond: condition, test_process: test_process}
            |> put_present(:ords_manager, test_process, self)
            |> put_present(:subscribe_to, state[:watcher][:subscribe_to])
+           |> put_present(:p_context, state[:p_context])
     {:ok, _pid} = WatcherSupervisor.start_child(args)
     update_status(state, id, :watched)
   end

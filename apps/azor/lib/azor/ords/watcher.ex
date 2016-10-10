@@ -5,7 +5,9 @@ defmodule Azor.Ords.Watcher do
   alias Azor.Ords.Manager
   alias Caravan.Wheel.Simple.Broadcaster
 
-  def start_link(%{ord: _} = args, opts \\ []) do
+  def start_link(%{ord: %{id: oid}} = args, opts \\ []) do
+    p_context = Map.get(args, :p_context)
+    opts = Keyword.put_new(opts, :name, p_name(oid, p_context))
     GenStage.start_link(__MODULE__, args, opts)
   end
 
@@ -85,4 +87,8 @@ defmodule Azor.Ords.Watcher do
       satisfy?(ticker, {:ord, :in_status, ids, status}, state)
     end)
   end
+
+  def p_name(oid, context), do: {:via, :gproc, p_key(oid, context)}
+  def p_key(oid, context), do: {:n, :l, {__MODULE__, oid, context}}
+  def whereis(oid, context), do: oid |> p_key(context) |> :gproc.where
 end
