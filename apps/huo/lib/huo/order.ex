@@ -6,6 +6,8 @@ defmodule Huo.Order do
                  {"Accept", "application/json"}]
   @access_key   Application.get_env(:huo, :access_key)
   @secret_key   Application.get_env(:huo, :secret_key)
+
+  # The `in_queue` status will be removed in the next API version.
   @ord_statuses ~w(undone partial_done done canceled _deprecated exception
                    partial_canceled in_queue)
   @ord_types    ~w(bi of bi_mkt of_mkt)

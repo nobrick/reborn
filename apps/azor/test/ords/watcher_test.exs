@@ -3,6 +3,7 @@ defmodule Azor.Ords.WatcherTest do
   import Azor.Ords.Watcher, only: [satisfy?: 3]
   import Utils.Access, only: [put_present: 3, put_present: 4]
   import Caravan.Wheel.Broadcaster, only: [sync_notify: 2]
+  import Azor.TestHelper, only: [kill_on_exit: 1]
   alias Caravan.Wheel.Broadcaster
   alias Azor.Ords.Watcher
 
@@ -101,20 +102,24 @@ defmodule Azor.Ords.WatcherTest do
       ticker = %{la: 3000}
       sync_notify(broadcaster, {:after_fetch, :simple, {:ok, ticker}})
       assert_receive({:watcher, :satisfied, ^watcher, _oid}, 1000)
-      Process.monitor(watcher)
-      assert_receive({:DOWN, _, :process, ^watcher, _})
+      ref = Process.monitor(watcher)
+      assert_receive({:DOWN, ^ref, :process, ^watcher, _})
     end
   end
 
   defp start_broadcaster(_context) do
     {:ok, pid} = Broadcaster.start_link
+    kill_on_exit(pid)
     {:ok, broadcaster: pid}
   end
 
   defp start_manager(context) do
-    args = put_present(%{}, [:watcher], context[:broadcaster],
-                       & %{subscribe_to: &1})
+    args =
+      %{}
+      |> put_present([:watcher], context[:broadcaster], & %{subscribe_to: &1})
+      |> Map.put(:p_context, context[:test])
     {:ok, pid} = GenServer.start_link(Manager, args)
+    kill_on_exit(pid)
     {:ok, %{state: %{ords_manager: pid}, manager: pid}}
   end
 
@@ -123,7 +128,9 @@ defmodule Azor.Ords.WatcherTest do
       %{ord: %{id: 3}, cond: {:now}, test_process: self}
       |> put_present([:ords_manager], context[:manager])
       |> put_present([:subscribe_to], context[:broadcaster])
+      |> Map.put(:p_context, context[:test])
     {:ok, pid} = Watcher.start_link(args)
+    kill_on_exit(pid)
     {:ok, watcher: pid}
   end
 end

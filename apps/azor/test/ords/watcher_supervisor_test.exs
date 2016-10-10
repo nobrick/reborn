@@ -6,6 +6,7 @@ defmodule Azor.Ords.WatcherSupervisorTest do
     condition = {:la_below, 3010}
     ord = %{id: 3, watch: %{cond: condition}}
     {:ok, pid} = WatcherSupervisor.start_child(%{ord: ord, cond: condition})
+    on_exit(fn -> Process.exit(pid, :kill) end)
     assert is_pid(pid)
   end
 end
