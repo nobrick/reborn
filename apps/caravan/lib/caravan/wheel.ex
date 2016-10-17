@@ -1,10 +1,11 @@
 defmodule Caravan.Wheel do
   use GenServer
+  alias Caravan.Wheel.Broadcaster
 
   ## API
 
   @doc """
-    Starts Caravan.Wheel instance.
+  Starts Caravan.Wheel instance.
   """
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, :ok, opts)
@@ -13,7 +14,7 @@ defmodule Caravan.Wheel do
   @timeout 8000
 
   @doc """
-    Fetches data remotely and writes it into the database.
+  Fetches data remotely and writes it into the database.
   """
   def pull(pid, mode \\ :simple, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, @timeout)
@@ -21,7 +22,7 @@ defmodule Caravan.Wheel do
   end
 
   @doc """
-    Fetches data for the given `mode`.
+  Fetches data for the given `mode`.
   """
   def fetch(pid, mode \\ :simple, opts \\ []) do
     timeout = Keyword.get(opts, :timeout, @timeout)
@@ -29,14 +30,16 @@ defmodule Caravan.Wheel do
   end
 
   @doc """
-    Adds event handler for after-fetching GenEvent manager.
+  Adds event handler for after-fetching GenEvent manager.
   """
-  def add_event_handler(pid, :after_fetch, handler, mode \\ :simple, args \\ []) do
-    GenServer.call(pid, {:add_event_handler, :after_fetch, handler, mode, args})
+  def add_event_handler(pid, :after_fetch, handler,
+                        mode \\ :simple, args \\ []) do
+    GenServer.call(pid, {:add_event_handler, :after_fetch,
+                         handler, mode, args})
   end
 
   @doc """
-    Gets after-fetching GenEvent manager.
+  Gets after-fetching GenEvent manager.
   """
   def get_event_manager(pid, :after_fetch, mode) do
     GenServer.call(pid, {:get_event_manager, :after_fetch, mode})
@@ -64,7 +67,7 @@ defmodule Caravan.Wheel do
   end
 
   def handle_call({:add_event_handler, :after_fetch, handler, mode, args},
-      _from, state) do
+                  _from, state) do
     ret = state |> callback_for(mode) |> GenEvent.add_handler(handler, args)
     {:reply, ret, state}
   end
@@ -76,9 +79,9 @@ defmodule Caravan.Wheel do
   ## Helpers
 
   defp notify(msg, state, mode, ret) do
-    state
-    |> callback_for(mode)
-    |> GenEvent.sync_notify({msg, mode, ret})
+    event = {msg, mode, ret}
+    GenEvent.sync_notify(callback_for(state, mode), event)
+    Broadcaster.sync_notify(broadcaster_for(mode), event)
   end
 
   defp callback_for(state, mode) when mode in [:simple, :k15] do
@@ -86,5 +89,8 @@ defmodule Caravan.Wheel do
   end
 
   defp handler_for(:simple), do: Caravan.Wheel.Modes.Simple
-  defp handler_for(:k15), do: Caravan.Wheel.Modes.K15
+  defp handler_for(:k15),    do: Caravan.Wheel.Modes.K15
+
+  defp broadcaster_for(:simple), do: Caravan.Wheel.Simple.Broadcaster
+  defp broadcaster_for(:k15),    do: Caravan.Wheel.K15.Broadcaster
 end

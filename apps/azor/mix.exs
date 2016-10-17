@@ -18,7 +18,7 @@ defmodule Azor.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger],
+    [applications: [:logger, :caravan, :dirk, :utils, :gen_stage, :gproc],
      mod: {Azor, []}]
   end
 
@@ -36,6 +36,10 @@ defmodule Azor.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    []
+    [{:caravan, in_umbrella: true},
+     {:dirk, in_umbrella: true},
+     {:utils, in_umbrella: true},
+     {:gen_stage, "~> 0.4"},
+     {:gproc, "~> 0.5.0"}]
   end
 end

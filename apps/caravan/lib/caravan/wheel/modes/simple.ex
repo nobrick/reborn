@@ -22,8 +22,8 @@ defmodule Caravan.Wheel.Modes.Simple do
   defp map_resp(%{"ticker" => %{"buy" => bi, "high" => hi, "last" => la, "low"
       => lo, "open" => op, "sell" => of, "vol" => vo}, "time" => time}) do
     time = time
-    |> String.to_integer
-    |> Utils.Time.from_unix_timestamp
+           |> String.to_integer
+           |> Utils.Time.from_unix_timestamp
     %{op: op, la: la, hi: hi, lo: lo, vo: vo, of: of, bi: bi, time: time}
   end
 
