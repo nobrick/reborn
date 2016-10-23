@@ -1,14 +1,14 @@
-defmodule Huo.Mixfile do
+defmodule Mutt.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :huo,
-     version: "0.0.1",
+    [app: :mutt,
+     version: "0.1.0",
      build_path: "../../_build",
      config_path: "../../config/config.exs",
      deps_path: "../../deps",
      lockfile: "../../mix.lock",
-     elixir: "~> 1.2",
+     elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      deps: deps]
@@ -18,7 +18,8 @@ defmodule Huo.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :httpoison]]
+    [applications: [:logger],
+     mod: {Mutt, []}]
   end
 
   # Dependencies can be Hex packages:
@@ -35,6 +36,7 @@ defmodule Huo.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:httpoison, "~> 0.9.0"}, {:poison, "~> 2.0"}, {:utils, in_umbrella: true}]
+    [{:slack, "~> 0.7.1"},
+     {:websocket_client, git: "https://github.com/jeremyong/websocket_client"}]
   end
 end
