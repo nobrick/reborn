@@ -7,3 +7,10 @@ config :dirk, Dirk.Repo,
   database: "reborn-dev",
   hostname: "localhost",
   pool_size: 10
+
+# Set the default slack channel to "#mutt" (using channel id instead of channel
+# name due to issues with private channels in elixir_slack).
+config :mutt, :default_channel, "G2QNNNNFP"
+
+config :logger, level: :info
+config :slack, api_token: "xoxb-90000000003-3SY9jApQLg79ffffffffhngA"

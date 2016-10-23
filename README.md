@@ -5,25 +5,34 @@
 * Azor: ord monitoring and controlling
 * Daydream: pattern predicting
 * Huo: huo client
+* Mutt: slack messaging and management
 * Utils: common utilities
 
 ## Todo
 ### Azor ord
-* ~~Clarify Dirk.Ord states~~
 * Finish implementing Ords transition processes
-    - ~~Implement Ords.Tracker~~
+    - Persist the orders.
     - Implement Huo.Order.RequestsBuffer(for rate threshold)
     - Support stop-loss and stop-profit ords. Also consider trailing amount and percentage. See [Btcc stop_order API](https://www.btcc.com/apidocs/spot-exchange-trade-json-rpc-api#buystoporder)
     - Support ord canceling along with watcher pids management in Ords.Manager
-* ~~Support ord dependency watch (ex. we expect ord.1 follows ord.2)~~
-* ~~Implement WatcherSupervisor~~
+    - ~~Implement Ords.Tracker~~
 * Sync the states with persistence (PostgreSQL or Mnesia, ETS, DETS or others)
 * Take note of TDD and finish up unit tests
 * Use ex_machina for fixtures, ex. ords
 * Timeout for Azor.Ords.Watcher and Tracker
+* Manager.cancel_ord/2 terminates the associated watcher and tracker if alive
+* Watcher and tracker pid may be outdated, since they may crash. Therefore we need to remove the watcher and tracker references when they crash(may monitor the process), and be able to lookup their new reference when they restart after crashes.
+    - Choice 1: General process registry (to implement the required behavior and lookup via name registration mechanism). Just as `:name` option in GenSever, we may use a tuple including `:ord_id` as the unique reference to identify and lookup the process. BTW. The general process registry makes convenience for testing.
+    - Choice 2: Watcher / tracker registry (to implement a gen server).
+    - Choice 3: Use gen_stage for Manager (to notify the watchers and trackers)
+    - Choice 4: Use Gproc library
+* ~~Clarify Dirk.Ord states~~
+* ~~Support ord dependency watch (ex. we expect ord.1 follows ord.2)~~
+* ~~Implement WatcherSupervisor~~
 
 ### Issues
 * Ords.Manager may crash
+* Pids may be outdated after processes crash and restart.
 * ~~The Manager pid stored in Watcher may be outdated when Manager crashes~~
 
 ### Random forest
@@ -40,4 +49,5 @@
 
 ### Further reading
 [CAP](https://codahale.com/you-cant-sacrifice-partition-tolerance/)
-[Alchemist.vim](https://github.com/slashmili/alchemist.vim)
+[Process Registry](https://m.alphasights.com/process-registry-in-elixir-a-practical-example-4500ee7c0dcc#.j2e19r1xm)
+[Gproc Registry](https://github.com/uwiger/gproc)
