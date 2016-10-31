@@ -3,12 +3,26 @@
 * Dirk: data archiving
 * Caravan: data fetching
 * Azor: ord monitoring and controlling
-* Daydream: pattern predicting
+* Machine: pattern predicting
 * Huo: huo client
 * Mutt: slack messaging and management
 * Utils: common utilities
 
-## Todo
+## Welcome to the machine
+### CorrSelector
+* get a group of correlated series with target series for training
+* corr() in PostgreSQL
+### DataGen
+* use Enum.chunk
+### Trainer
+### Predictor
+### Backtest
+### Control
+
+### Caravan.Wheel.Interval
+* Remove conflicting k15 points
+* insert_all with :on_conflict option
+
 ### Azor ord
 * Finish implementing Ords transition processes
     - Persist the orders.
