@@ -1,3 +1,3 @@
 defmodule Dirk.Ticker.K15Test do
-  use ExUnit.case, async: true
+  use ExUnit.Case, async: true
 end
