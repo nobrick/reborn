@@ -19,6 +19,9 @@
 ### Backtest
 ### Control
 
+### Slack
+* Fix test issue
+
 ### Caravan.Wheel.Interval
 * Remove conflicting k15 points
 * insert_all with :on_conflict option
