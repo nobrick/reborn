@@ -17,12 +17,13 @@ defmodule Dirk.Ticker do
     field :time, Ecto.DateTime
   end
 
-  @required_fields ~w(op la hi lo vo time)
-  @optional_fields ~w(of bi d_la)
+  @fields ~w(op la hi lo vo of bi d_la time)a
+  @required_fields ~w(op la hi lo vo time)a
 
   def changeset(:create, model, params \\ :empty) do
     model
-    |> cast(params, @required_fields, @optional_fields)
+    |> cast(params, @fields)
+    |> validate_required(@required_fields)
     |> set_d_la
   end
 
