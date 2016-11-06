@@ -18,7 +18,7 @@ defmodule Utils.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :calendar]]
+    [applications: [:logger, :calendar, :timex, :ecto]]
   end
 
   # Dependencies can be Hex packages:
@@ -35,6 +35,8 @@ defmodule Utils.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:calendar, "~> 0.14.0"}]
+    [{:calendar, "~> 0.14.0"},
+     {:timex, "~> 3.0"},
+     {:ecto, "~> 2.1.0-rc.3"}]
   end
 end
