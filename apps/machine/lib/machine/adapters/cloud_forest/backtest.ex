@@ -44,7 +44,17 @@ defmodule Machine.Adapters.CloudForest.Backtest do
   @doc """
   Backtests for all.
   """
-  def test_all(target_chunks, lookup_chunks) do
+  def test_all(target_chunks, lookup_chunks, opts \\ []) do
+    fun = fn -> do_test_all(target_chunks, lookup_chunks) end
+    if Keyword.get(opts, :tc, true) do
+      {time, value} = :timer.tc(fun)
+      Map.put(value, :time_elapsed, Float.floor(time / 1.0e6, 1))
+    else
+      fun.()
+    end
+  end
+
+  def do_test_all(target_chunks, lookup_chunks) do
     chunks_count = Enum.count(target_chunks)
     result =
       target_chunks
