@@ -16,8 +16,8 @@ defmodule Machine.Adapters.CloudForest.Predictor do
     predictions_path = opts[:predictions_path] || @predictions_path
     test_path = opts[:test_path] || @test_path
     forest_path = opts[:forest_path] || @forest_path
-    args = "-preds #{predictions_path} -fm #{test_path} " <>
-           "-rfpred #{forest_path}"
+    args = "-preds=#{predictions_path} -fm=#{test_path} " <>
+           "-rfpred=#{forest_path}"
     {result, 0} = System.cmd("applyforest", String.split(args))
     IO.puts result
   end

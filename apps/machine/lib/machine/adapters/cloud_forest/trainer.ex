@@ -14,8 +14,8 @@ defmodule Machine.Adapters.CloudForest.Trainer do
   def learn(opts \\ []) do
     samples_path = opts[:samples_path] || @samples_path
     forest_path = opts[:forest_path] || @forest_path
-    args = "-train #{samples_path} -rfpred #{forest_path} -target N:d_la0 " <>
-           "-nTrees 100 -mTry .33 -oob" |> String.split
+    args = "-train=#{samples_path} -rfpred=#{forest_path} -target=N:d_la0 " <>
+           "-nTrees=100 -mTry=.33 -oob=false -nCores=1" |> String.split
     {result, 0} = System.cmd("growforest", args)
     IO.puts result
   end
