@@ -21,7 +21,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
 
   ## Helpers
 
-  @filters [{0.82, 35}, {0.8, 37}, {0.78, 39}]
+  @filters Application.get_env(:machine, :corr_filters)
 
   @doc """
   Backtests for one.
