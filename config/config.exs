@@ -20,3 +20,4 @@ config :dirk, ecto_repos: [Dirk.Repo]
 config :machine, chunk_size: 7
 config :machine, chunk_step: 1
 config :machine, feature_keys: ~w(d_la d_hi d_lo)a
+config :machine, corr_filters: [{0.82, 35}, {0.8, 37}, {0.78, 39}]
