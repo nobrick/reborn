@@ -74,7 +74,17 @@ defmodule Machine.Adapters.CloudForest.Backtest do
     %{result: result, expections: expections,
       stats: %{chunks_count: chunks_count, pos_count: pos_count,
                neg_count: neg_count, zero_count: zero_count,
-               rate: safe_div(pos_count, (pos_count + neg_count))}}
+               rate: safe_div(pos_count, (pos_count + neg_count))},
+      corr_filters: get_corr_filters_stats(result)}
+  end
+
+  defp get_corr_filters_stats(result) do
+    result
+    |> Enum.flat_map(& elem(&1, 1))
+    |> Enum.reduce(%{}, fn {k, v}, acc ->
+      Map.update(acc, k, {0, 0}, fn {sum, n} -> {sum + v, n + 1} end)
+    end)
+    |> Enum.map(fn {k, {sum, n}} -> {k, Float.ceil(sum / n, 1)} end)
   end
 
   defp safe_div(a, b) do
