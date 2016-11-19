@@ -46,12 +46,9 @@ defmodule Machine.Corr do
       ...> |> Machine.Corr.filter_corr_chunks([{0.90, 20}, {0.85, 30}])
 
   """
-  def filter_corr_chunks(_corr_chunks, [], logs) do
-    {:error, logs}
-  end
-
-  def filter_corr_chunks(corr_chunks, [{min_corr, min_count}|tail],
-                         logs \\ []) do
+  def filter_corr_chunks(corr_chunks, filters, logs \\ [])
+  def filter_corr_chunks(_corr_chunks, [], logs), do: {:error, logs}
+  def filter_corr_chunks(corr_chunks, [{min_corr, min_count}|tail], logs) do
     filtered = Enum.filter(corr_chunks, & elem(&1, 1) >= min_corr)
     count = Enum.count(filtered)
     logs = [{min_corr, count}|logs]
