@@ -1,6 +1,5 @@
 defmodule Dirk.Ticker.K15 do
   use Ecto.Schema
-  import Ecto.Changeset
   import Utils.Ecto, only: [in_time_range: 4]
   import Ecto.Query, only: [from: 2, order_by: 2, limit: 2]
   alias Dirk.Ticker.K15
