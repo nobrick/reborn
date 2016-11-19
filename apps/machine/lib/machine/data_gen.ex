@@ -8,6 +8,8 @@ defmodule Machine.DataGen do
   alias Utils.TimeDiff
   import Ecto.Query, only: [offset: 2, limit: 2]
 
+  @compile {:inline, chunk_elems_in_seq?: 2}
+
   @chunk_size Application.get_env(:machine, :chunk_size)
   @chunk_step Application.get_env(:machine, :chunk_step)
 
@@ -59,11 +61,12 @@ defmodule Machine.DataGen do
     step = opts[:chunk_step] || @chunk_step
     delta_list
     |> Stream.chunk(count, step)
-    |> Enum.filter(fn chunk ->
-      time_pre = List.last(chunk).time
-      time_post = hd(chunk).time
-      TimeDiff.compare(time_pre, time_post, 15 * (count - 1)) == 0
-      true
-    end)
+    |> Enum.filter(& chunk_elems_in_seq?(&1, count))
+  end
+
+  defp chunk_elems_in_seq?(chunk, chunk_size) do
+    time_pre = List.last(chunk).time
+    time_post = hd(chunk).time
+    TimeDiff.compare(time_pre, time_post, 15 * (chunk_size - 1)) == 0
   end
 end
