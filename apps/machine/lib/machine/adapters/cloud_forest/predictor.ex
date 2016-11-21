@@ -5,6 +5,8 @@ defmodule Machine.Adapters.CloudForest.Predictor do
 
   alias Machine.Adapters.CloudForest.DataWriter
 
+  @compile {:inline, parse_float: 1}
+
   @test_path "test.trans.fm"
   @predictions_path "predictions.tsv"
   @forest_path "forest.sf"
