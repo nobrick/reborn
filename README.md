@@ -12,11 +12,18 @@
 ### CorrSelector
 * get a group of correlated series with target series for training
 * corr() in PostgreSQL
+
 ### DataGen
 * use Enum.chunk
+
 ### Trainer
+
 ### Predictor
+
 ### Backtest
+- [ ] Save predictions to a file for later uses.
+- [ ] Checks if the two periods (target_chunks and lookup_chunks) conflict each other instead of outputing results.
+
 ### Control
 
 ### Slack
