@@ -14,14 +14,20 @@ defmodule Machine.DataGen do
   @chunk_step Application.get_env(:machine, :chunk_step)
 
   @doc """
-  Fetches the data and converts it into a delta list.
+  Fetches the data.
   """
-  def fetch_delta_list(offset, limit) do
+  def fetch_data(offset, limit) do
     K15.distinct_on_time
     |> offset(^offset)
     |> limit(^(limit + 1))
     |> Repo.all
-    |> into_delta_list
+  end
+
+  @doc """
+  Fetches the data and converts it into a delta list.
+  """
+  def fetch_delta_list(offset, limit) do
+    fetch_data(offset, limit) |> into_delta_list
   end
 
   @doc """
