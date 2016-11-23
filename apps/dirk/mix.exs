@@ -18,7 +18,7 @@ defmodule Dirk.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :postgrex, :ecto],
+    [applications: [:logger, :postgrex, :ecto, :utils],
      mod: {Dirk, []}]
   end
 
