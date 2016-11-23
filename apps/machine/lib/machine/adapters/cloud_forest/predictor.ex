@@ -7,28 +7,25 @@ defmodule Machine.Adapters.CloudForest.Predictor do
 
   @compile {:inline, parse_float: 1}
 
-  @test_path "test.trans.fm"
-  @predictions_path "predictions.tsv"
-  @forest_path "forest.sf"
+  @test_name "test.trans.fm"
+  @predictions_name "predictions.tsv"
+  @forest_name "forest.sf"
 
   @doc """
   Predicts the data.
   """
-  def predict(opts \\ []) do
-    predictions_path = opts[:predictions_path] || @predictions_path
-    test_path = opts[:test_path] || @test_path
-    forest_path = opts[:forest_path] || @forest_path
-    args = "-preds=#{predictions_path} -fm=#{test_path} " <>
-           "-rfpred=#{forest_path}"
-    {result, 0} = System.cmd("applyforest", String.split(args))
+  def predict(dir_path) do
+    args = "-preds=#{@predictions_name} -fm=#{@test_name} " <>
+           "-rfpred=#{@forest_name}"
+    {result, 0} = System.cmd("applyforest", String.split(args), cd: dir_path)
     IO.puts result
   end
 
   @doc """
   Saves the target data for backtesting.
   """
-  def save_data(target_chunk, opts \\ []) do
-    test_path = opts[:test_path] || @test_path
+  def save_data(dir_path, target_chunk) do
+    test_path = Path.join(dir_path, @test_name)
     DataWriter.save_data(DataWriter, test_path, [target_chunk])
   end
 
@@ -37,7 +34,8 @@ defmodule Machine.Adapters.CloudForest.Predictor do
   @doc """
   Reads the prediction from the given `predictions_path`.
   """
-  def read_prediction(predictions_path \\ @predictions_path) do
+  def read_prediction(dir_path) do
+    predictions_path = Path.join(dir_path, @predictions_name)
     [label, predicted, actual] =
       File.open!(predictions_path, [:read], fn(file) ->
         IO.read(file, :all) |> String.split

@@ -8,3 +8,4 @@ erl_crash.dump
 /config/prod.exs
 /apps/huo/config/tokens.exs
 /scrab.ex
+/data

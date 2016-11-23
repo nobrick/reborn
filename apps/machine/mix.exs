@@ -18,7 +18,7 @@ defmodule Machine.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger],
+    [applications: [:logger, :gen_stage],
      mod: {Machine, []}]
   end
 
@@ -36,6 +36,6 @@ defmodule Machine.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    []
+    [{:gen_stage, "~> 0.9.0"}]
   end
 end
