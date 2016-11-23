@@ -11,6 +11,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
   @data_storage_path Application.get_env(:machine, :data_storage_path)
   @ev_threshold 0.0011
   @profit_threshold 0.0011
+  @stages_num 4
 
   @doc """
   Backtests for one.
@@ -61,17 +62,23 @@ defmodule Machine.Adapters.CloudForest.Backtest do
     result =
       target_chunks
       |> Stream.with_index
-      |> Enum.map(fn {target, index} ->
+      |> Flow.from_enumerable
+      |> Flow.partition(stages: @stages_num)
+      |> Flow.map(fn {target, index} ->
         IO.puts "---- #{index}..#{chunks_count - 1} ----"
         subdir_path = Path.join(data_dir_path, Integer.to_string(index))
         File.mkdir!(subdir_path)
-        test_one(subdir_path, target, lookup_chunks) |> IO.inspect
+        test_one(subdir_path, target, lookup_chunks)
       end)
+      |> Enum.to_list
     p_a_list = Enum.filter_map(result,
                  fn {:ok, _, _} -> true; {:error, _} -> false end,
                  fn {:ok, _, [_, p, a]} -> {p, a} end)
-    %{result: result, p_a_list: p_a_list, profit: profit(p_a_list),
-      stats: %{chunks_count: chunks_count},
+    %{result: result, p_a_list: p_a_list, stats: %{chunks_count: chunks_count},
+      profit: %{gt_threshold: profit(p_a_list),
+                gt_0: profit(p_a_list, & &1 > 0),
+                lt_0: profit(p_a_list, & &1 < 0),
+                all_learned: profit(p_a_list, fn _ -> true end)},
       corr_filters: get_corr_filters_stats(result)}
     |> Map.update!(:stats, & Map.merge(&1, count_ev(p_a_list)))
   end
