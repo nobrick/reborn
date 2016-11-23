@@ -17,3 +17,10 @@ import_config "../apps/*/config/config.exs"
 #       metadata: [:user_id]
 import_config "#{Mix.env}.exs"
 config :dirk, ecto_repos: [Dirk.Repo]
+config :machine, fstate_ba: 1000.0
+config :machine, chunk_size: 7
+config :machine, chunk_step: 1
+config :machine, feature_keys: ~w(d_la d_hi d_lo)a
+config :machine, corr_filters: [{0.86, 35}, {0.82, 37}, {0.78, 39}]
+config :machine, data_storage_path: Path.expand("data", File.cwd!)
+#config :machine, corr_filters: [{0.82, 22}, {0.8, 27}, {0.78, 32}]

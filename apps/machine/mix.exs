@@ -1,14 +1,14 @@
-defmodule Azor.Mixfile do
+defmodule Machine.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :azor,
-     version: "0.0.1",
+    [app: :machine,
+     version: "0.1.0",
      build_path: "../../_build",
      config_path: "../../config/config.exs",
      deps_path: "../../deps",
      lockfile: "../../mix.lock",
-     elixir: "~> 1.2",
+     elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      deps: deps]
@@ -18,8 +18,8 @@ defmodule Azor.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :caravan, :dirk, :utils, :gen_stage, :gproc],
-     mod: {Azor, []}]
+    [applications: [:logger, :gen_stage],
+     mod: {Machine, []}]
   end
 
   # Dependencies can be Hex packages:
@@ -36,10 +36,6 @@ defmodule Azor.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:caravan, in_umbrella: true},
-     {:dirk, in_umbrella: true},
-     {:utils, in_umbrella: true},
-     {:gen_stage, "~> 0.9.0"},
-     {:gproc, "~> 0.5.0"}]
+    [{:gen_stage, "~> 0.9.0"}]
   end
 end
