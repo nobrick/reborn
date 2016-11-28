@@ -21,7 +21,7 @@
 ### Predictor
 
 ### Backtest
-- [ ] Calculate the profit of the missing ones(insufficent for training).
+- [ ] Calculate the profit of the missing ones(insufficient for training).
 - [ ] Does the backtest curve go up, or down? Check every one.
 - [ ] Also need a fetch_chunks(`time_start`, `time_end`) version.
 - [ ] Dynamically removes the target fields from lookups fields.
