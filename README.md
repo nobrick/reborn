@@ -23,10 +23,10 @@
 ### Backtest
 - [ ] Calculate the profit of the missing ones(insufficent for training).
 - [ ] Does the backtest curve go up, or down? Check every one.
-- [ ] Also need a fetch_chunks(time_start, time_end) version.
+- [ ] Also need a fetch_chunks(`time_start`, `time_end`) version.
 - [ ] Dynamically removes the target fields from lookups fields.
 - [ ] Save predictions to a file for later uses.
-- [ ] Checks if the two periods (target_chunks and lookup_chunks) conflict each other instead of outputing results.
+- [ ] Checks if the two periods (`target_chunks` and `lookup_chunks`) conflict each other instead of outputing results.
 
 ### Control
 
@@ -35,7 +35,7 @@
 
 ### Caravan.Wheel.Interval
 * Remove conflicting k15 points
-* insert_all with :on_conflict option
+* `insert_all` with `:on_conflict` option
 
 ### Azor ord
 * Finish implementing Ords transition processes
