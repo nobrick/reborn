@@ -48,8 +48,8 @@ defmodule Machine.Corr do
     |> Flow.map(& map_corr_chunk(&1, pattern, key))
   end
 
-  defp map_corr_chunk(chunk, pattern, key) do
-    {chunk, compute_corr(Enum.map(chunk, & Map.fetch!(&1, key)), pattern)}
+  defp map_corr_chunk([_|chunk_tl] = chunk, pattern, key) do
+    {chunk, Enum.map(chunk_tl, & Map.fetch!(&1, key)) |> compute_corr(pattern)}
   end
 
   @doc """
@@ -94,7 +94,15 @@ defmodule Machine.Corr do
       iex> Machine.Corr.compute_corr([1, 2, 3], [4, 5, 7])
 
   """
-  def compute_corr(enumerable1, enumerable2) do
+  def compute_corr(enum1, enum2), do: Statistics.correlation(enum1, enum2)
+
+  @doc """
+  Computes the correlation of two equal-size finite enumerables.
+
+  Deprecated. Use `compute_corr/2` instead.
+  """
+  def compute_corr2(enumerable1, enumerable2)
+      when length(enumerable1) == length(enumerable2) do
     input =
       enumerable1
       |> Stream.zip(enumerable2)
