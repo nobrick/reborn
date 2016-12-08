@@ -14,7 +14,7 @@ defmodule Machine.Adapters.CloudForest.Trainer do
   def learn(dir_path) do
     args =
       "-train=#{@samples_name} -rfpred=#{@forest_name} -target=N:d_la0 " <>
-      "-nTrees=100 -mTry=.33 -oob=false -nCores=1" |> String.split
+      "-nTrees=1000 -mTry=.33 -oob=false -nCores=1" |> String.split
     {result, 0} = System.cmd("growforest", args, cd: dir_path)
     IO.puts result
   end
