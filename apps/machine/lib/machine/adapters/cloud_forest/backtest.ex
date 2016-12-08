@@ -7,7 +7,6 @@ defmodule Machine.Adapters.CloudForest.Backtest do
   alias Machine.Corr
   alias Machine.Adapters.CloudForest.{Predictor, Trainer}
   alias Utils.TimeDiff
-  import Float, only: [floor: 2]
 
   @filters Application.get_env(:machine, :corr_filters)
   @data_storage_path Application.get_env(:machine, :data_storage_path)
@@ -89,7 +88,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
       |> Enum.reduce(1, fn chunk, acc ->
         (hd(chunk).d_la + 1) * acc
       end)
-      |> (& {&1 - 1, target_chunks_count}).()
+      |> (& {floor(&1 - 1), target_chunks_count}).()
 
     {sequence_pft, seq_list} = sequence_pft(result)
     pft = [seq: {sequence_pft, target_chunks_count},
@@ -121,19 +120,25 @@ defmodule Machine.Adapters.CloudForest.Backtest do
   """
   def sequence_pft(result, opts \\ []) do
     p_fun = opts[:p_fun] || &seq_p_fun/1
-    initial_ba = opts[:initial_ba] || 1
-    initial_la = opts[:initial_ba] || 1
+    initial_ba = opts[:initial_ba] || 1.0
+    initial_la = opts[:initial_ba] || 1.0
     slice_rate = opts[:slice_rate] || 0.1
     least_b_partial_scale = opts[:least_b_partial_scale] || 0.001
     slice = initial_ba * slice_rate
     least_b_partial = initial_ba * least_b_partial_scale
+    calc_pft = fn holds, ba, la ->
+      floor((ba + holds * la) / initial_ba - 1)
+    end
     {seq_list, {holds, ba, la}} =
       Enum.map_reduce(result, {0, initial_ba, initial_la},
                   fn {_, _, {_, p, a}, _}, {holds, ba, la} ->
         next_la = la * (1 + a)
         remain = {holds, ba, next_la}
         decision = p_fun.(p)
-        log_state = fn decision -> {decision, holds, ba, la} end
+        log_state = fn decision ->
+          {decision, floor(holds), floor(ba), floor(la),
+           calc_pft.(holds, ba, la)}
+        end
         on = fn exp, value_fun ->
           if exp do
             {log_state.(decision), value_fun.()}
@@ -173,7 +178,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
             {log_state.(decision), remain}
         end
       end)
-    {safe_div(ba + holds * la, initial_ba) - 1, seq_list}
+    {calc_pft.(holds, ba, la), seq_list}
   end
 
   def seq_p_fun(p) when is_nil(p), do: {:of_partial, 0.8}
@@ -219,7 +224,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
     |> Enum.reduce({1, 0}, fn {_, a}, {value, count} ->
       {value * (1 + a), count + 1}
     end)
-    |> (fn {value, count} -> {value - 1, count} end).()
+    |> (fn {value, count} -> {floor(value - 1), count} end).()
   end
 
   def get_pft_spectrum(p_a_list) do
@@ -234,7 +239,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
           pos_pft_count
         end
       pos_pft_rate = safe_div(pos_pft_count, count)
-      {[{p, a, pft, count, pos_pft_count, pos_pft_rate}|list],
+      {[{p, a, floor(pft), count, pos_pft_count, pos_pft_rate}|list],
        value, count, pos_pft_count}
     end
     p_a_list
@@ -275,4 +280,8 @@ defmodule Machine.Adapters.CloudForest.Backtest do
         0
     end
   end
+
+  defp floor(number, precision \\ 6)
+  defp floor(number, _) when is_integer(number), do: number
+  defp floor(number, precision), do: Float.floor(number, precision)
 end
