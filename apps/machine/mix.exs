@@ -36,6 +36,6 @@ defmodule Machine.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:gen_stage, "~> 0.9.0"}]
+    [{:gen_stage, "~> 0.9.0"}, {:statistics, "~> 0.4.0"}]
   end
 end
