@@ -76,6 +76,7 @@
 * Resolve duplicate K15 records with different `vo`
 
 ### Further reading
+[NimbleCSV](https://github.com/plataformatec/nimble_csv)
 [CAP](https://codahale.com/you-cant-sacrifice-partition-tolerance/)
 [Process Registry](https://m.alphasights.com/process-registry-in-elixir-a-practical-example-4500ee7c0dcc#.j2e19r1xm)
 [Gproc Registry](https://github.com/uwiger/gproc)
