@@ -41,7 +41,7 @@ defmodule Machine.Adapters.CloudForest.Predictor do
         IO.read(file, :all) |> String.split
       end)
     {label, _} = Integer.parse(label)
-    [label, parse_float(predicted), parse_float(actual)]
+    {label, parse_float(predicted), parse_float(actual)}
   end
 
   defp parse_float(string) do
