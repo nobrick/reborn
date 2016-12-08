@@ -8,25 +8,14 @@
 * Mutt: slack messaging and management
 * Utils: common utilities
 
-## Welcome to the machine
-### CorrSelector
-* get a group of correlated series with target series for training
-* corr() in PostgreSQL
-
-### DataGen
-* use Enum.chunk
-
-### Trainer
-
-### Predictor
-
+## the machine
 ### Backtest
-- [ ] Calculate the profit of the missing ones(insufficient for training).
-- [ ] Does the backtest curve go up, or down? Check every one.
 - [ ] Also need a fetch_chunks(`time_start`, `time_end`) version.
 - [ ] Dynamically removes the target fields from lookups fields.
-- [ ] Save predictions to a file for later uses.
+- [ ] Save predictions to a file for later uses. May use `NimbleCSV`.
 - [ ] Checks if the two periods (`target_chunks` and `lookup_chunks`) conflict each other instead of outputing results.
+- [ ] Clean up the data directory automatically.
+- [ ] Try MS LightGBM.
 
 ### Control
 
@@ -34,8 +23,8 @@
 * Fix test issue
 
 ### Caravan.Wheel.Interval
-* Remove conflicting k15 points
-* `insert_all` with `:on_conflict` option
+- [ ] Remove conflicting k15 points.
+- [ ] `insert_all` with `:on_conflict` option.
 
 ### Azor ord
 * Finish implementing Ords transition processes
@@ -77,6 +66,9 @@
 
 ### Further reading
 [NimbleCSV](https://github.com/plataformatec/nimble_csv)
+[Microsoft/LightGBM](https://github.com/Microsoft/LightGBM/tree/master/examples/regression)
+
+### Archived reading
 [CAP](https://codahale.com/you-cant-sacrifice-partition-tolerance/)
 [Process Registry](https://m.alphasights.com/process-registry-in-elixir-a-practical-example-4500ee7c0dcc#.j2e19r1xm)
 [Gproc Registry](https://github.com/uwiger/gproc)
