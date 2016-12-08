@@ -24,10 +24,11 @@ defmodule Utils.TimeDiff do
   end
 
   def compare(time_0, time_1, shift, granularity)
-      when is_binary(time_0) and is_binary(time_1) and is_integer(shift) do
+      when is_binary(time_0) and is_binary(time_1) and
+           (is_integer(shift) or is_nil(shift)) do
     utc_0 = Timex.parse!(time_0, @format)
     utc_1 = Timex.parse!(time_1, @format)
-    utc_0_shifted = if shift == [] do
+    utc_0_shifted = if shift == nil do
                       utc_0
                     else
                       Timex.shift(utc_0, [{granularity, shift}])
