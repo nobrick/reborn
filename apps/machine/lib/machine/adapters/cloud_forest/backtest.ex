@@ -48,7 +48,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
         do_test_all(data_dir_path, target_chunks, lookup_chunks, opts)
         |> Keyword.put(:ranges, chunk_ranges)
       if cleanup? do
-        cleanup_builds(data_dir_path)
+        spawn_link(fn -> cleanup_builds(data_dir_path) end)
       end
       ret
     end
