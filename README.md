@@ -11,13 +11,13 @@
 ## the machine
 ### Backtest
 - [ ] Also need a fetch_chunks(`time_start`, `time_end`) version.
-- [ ] Dynamically removes the target fields from lookups fields.
 - [ ] Save predictions to a file for later uses. May use `NimbleCSV`.
 - [ ] Allow setting `chunk_size` without restarting the app.
-- [ ] Include additional info(eg. time ranges for target and sample chunks) in the result.
-- [ ] Checks if the two periods (`target_chunks` and `lookup_chunks`) conflict each other instead of outputing results.
-- [ ] Clean up the data directory automatically.
+- [ ] Dynamically removes the target fields from lookups fields.
 - [ ] Try MS LightGBM.
+- [x] Clean up the data directory automatically.
+- [x] Include additional info(eg. time ranges for target and sample chunks) in the result.
+- [x] Checks if the two periods (`target_chunks` and `lookup_chunks`) conflict each other instead of outputing results.
 
 ### Control
 
