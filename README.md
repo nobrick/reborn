@@ -13,6 +13,7 @@
 - [ ] Also need a fetch_chunks(`time_start`, `time_end`) version.
 - [ ] Save predictions to a file for later uses. May use `NimbleCSV`.
 - [ ] Allow setting `chunk_size` without restarting the app.
+- [ ] Plot data graph.
 - [ ] Dynamically removes the target fields from lookups fields.
 - [ ] Try MS LightGBM.
 - [x] Clean up the data directory automatically.
