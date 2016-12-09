@@ -21,7 +21,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
                target_chunk, chunks, opts) do
     filters = Keyword.get(opts, :filters, @filters)
     pattern = Enum.map(target_tl, & &1.d_la)
-    time = Ecto.DateTime.to_iso8601(time) <> "Z"
+    time = to_utc_time(time)
     corr_chunks = Corr.find_corr_chunks(chunks, pattern, :d_la)
     case Corr.filter_corr_chunks(corr_chunks, filters) do
       {:ok, logs, filtered} ->
@@ -39,22 +39,23 @@ defmodule Machine.Adapters.CloudForest.Backtest do
   Backtests for all.
   """
   def test_all(target_chunks, lookup_chunks, opts \\ []) do
-    {check_conflict?, opts} =
-      Keyword.pop(opts, :check_target_lookup_conflicts, true)
-    if check_conflict? do
-      range = fn chunks ->
-        [List.last(List.last(chunks)).time,
-         hd(hd(chunks)).time,
-         Enum.count(chunks)]
-      end
-      # TODO: Checks if the two periods conflict each other instead of
-      # outputing results.
-      range.(lookup_chunks) |> IO.inspect
-      range.(target_chunks) |> IO.inspect
+    range = fn chunks ->
+      {List.last(List.last(chunks)).time |> to_utc_time,
+       hd(hd(chunks)).time |> to_utc_time,
+       Enum.count(chunks)}
     end
+    {_, lookup_end_time, _} = lookup_range = range.(lookup_chunks)
+    {target_start_time, _, _} = target_range = range.(target_chunks)
 
     {measure_time?, opts} = Keyword.pop(opts, :tc, true)
-    fun = fn -> do_test_all(target_chunks, lookup_chunks, opts) end
+    fun = fn ->
+      do_test_all(target_chunks, lookup_chunks, opts)
+      |> Keyword.put(:ranges, [lookups: lookup_range, target: target_range])
+    end
+    if TimeDiff.compare(lookup_end_time, target_start_time,
+                        nil, :minutes) >= 0 do
+      raise ArgumentError, message: "Target and lookup chunks overlap"
+    end
     if measure_time? do
       {time, value} = :timer.tc(fun)
       Keyword.put(value, :time_elapsed, floor(time / 1.0e6, 1))
@@ -284,4 +285,6 @@ defmodule Machine.Adapters.CloudForest.Backtest do
   defp floor(number, precision \\ 6)
   defp floor(number, _) when is_integer(number), do: number
   defp floor(number, precision), do: Float.floor(number, precision)
+
+  defp to_utc_time(time), do: Ecto.DateTime.to_iso8601(time) <> "Z"
 end
