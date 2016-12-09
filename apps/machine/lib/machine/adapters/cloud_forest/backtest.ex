@@ -39,22 +39,18 @@ defmodule Machine.Adapters.CloudForest.Backtest do
   Backtests for all.
   """
   def test_all(target_chunks, lookup_chunks, opts \\ []) do
-    range = fn chunks ->
-      {List.last(List.last(chunks)).time |> to_utc_time,
-       hd(hd(chunks)).time |> to_utc_time,
-       Enum.count(chunks)}
-    end
-    {_, lookup_end_time, _} = lookup_range = range.(lookup_chunks)
-    {target_start_time, _, _} = target_range = range.(target_chunks)
-
     {measure_time?, opts} = Keyword.pop(opts, :tc, true)
+    {cleanup?, opts} = Keyword.pop(opts, :cleanup, true)
+    chunk_ranges = validate_chunk_ranges(target_chunks, lookup_chunks)
+    data_dir_path = make_data_dir
     fun = fn ->
-      do_test_all(target_chunks, lookup_chunks, opts)
-      |> Keyword.put(:ranges, [lookups: lookup_range, target: target_range])
-    end
-    if TimeDiff.compare(lookup_end_time, target_start_time,
-                        nil, :minutes) >= 0 do
-      raise ArgumentError, message: "Target and lookup chunks overlap"
+      ret =
+        do_test_all(data_dir_path, target_chunks, lookup_chunks, opts)
+        |> Keyword.put(:ranges, chunk_ranges)
+      if cleanup? do
+        cleanup_builds(data_dir_path)
+      end
+      ret
     end
     if measure_time? do
       {time, value} = :timer.tc(fun)
@@ -64,11 +60,31 @@ defmodule Machine.Adapters.CloudForest.Backtest do
     end
   end
 
+  defp cleanup_builds(data_dir_path) do
+    data_dir_path |> get_build_path |> File.rm_rf!
+  end
+
+  defp validate_chunk_ranges(target_chunks, lookup_chunks) do
+    range = fn chunks ->
+      {List.last(List.last(chunks)).time |> to_utc_time,
+       hd(hd(chunks)).time |> to_utc_time,
+       Enum.count(chunks)}
+    end
+    {_, lookup_end_time, _} = lookup_range = range.(lookup_chunks)
+    {target_start_time, _, _} = target_range = range.(target_chunks)
+    if TimeDiff.compare(lookup_end_time, target_start_time,
+                        nil, :minutes) >= 0 do
+      raise ArgumentError, message: "Target and lookup chunks overlap"
+    end
+    [lookups: lookup_range, target: target_range]
+  end
+
   @annual_k15_count 365 * 24 * 60 / 15
 
-  defp do_test_all(target_chunks, lookup_chunks, opts) do
+  defp do_test_all(data_dir_path, target_chunks, lookup_chunks, opts) do
+    build_path = get_build_path(data_dir_path)
+    File.mkdir!(build_path)
     target_chunks_count = Enum.count(target_chunks)
-    data_dir_path = make_data_dir
     result =
       target_chunks
       |> Stream.with_index
@@ -76,7 +92,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
       |> Flow.partition(stages: @stages_num)
       |> Flow.map(fn {target, index} ->
         IO.puts "---- #{index}..#{target_chunks_count - 1} ----"
-        subdir_path = Path.join(data_dir_path, Integer.to_string(index))
+        subdir_path = Path.join(build_path, Integer.to_string(index))
         File.mkdir!(subdir_path)
         test_one(subdir_path, target, lookup_chunks, opts) |> IO.inspect
       end)
@@ -113,6 +129,10 @@ defmodule Machine.Adapters.CloudForest.Backtest do
      pft_min_max: Enum.min_max_by(pft_spectrum, & elem(&1, 2)),
      annual_pft: annual_pft, seq_list: seq_list, pft: pft]
     |> Keyword.update!(:stats, & Keyword.merge(&1, count_ev(p_a_list)))
+  end
+
+  defp get_build_path(data_dir_path) do
+    Path.join(data_dir_path, "build")
   end
 
   @doc """
