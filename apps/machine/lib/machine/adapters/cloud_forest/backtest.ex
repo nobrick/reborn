@@ -13,6 +13,8 @@ defmodule Machine.Adapters.CloudForest.Backtest do
   @ev_threshold 0.003
   @pft_threshold 0.003
   @stages_num 4
+  @annual_k15_count 365 * 24 * 60 / 15
+  @seq_names ~w(gt_threshold gt_0 exp_1)a
 
   @doc """
   Backtests for one.
@@ -79,8 +81,6 @@ defmodule Machine.Adapters.CloudForest.Backtest do
     [lookups: lookup_range, target: target_range]
   end
 
-  @annual_k15_count 365 * 24 * 60 / 15
-
   defp do_test_all(data_dir_path, target_chunks, lookup_chunks, opts) do
     build_path = get_build_path(data_dir_path)
     File.mkdir!(build_path)
@@ -107,16 +107,18 @@ defmodule Machine.Adapters.CloudForest.Backtest do
       end)
       |> (& {floor(&1 - 1), target_chunks_count}).()
 
-    {sequence_pft, seq_list} = sequence_pft(result)
-    pft = [seq: {sequence_pft, target_chunks_count},
-           gt_threshold: pft(p_a_list),
-           gt_0: pft(p_a_list, & &1 > 0),
-           lt_0: pft(p_a_list, & &1 < 0),
-           all_learned: pft(p_a_list, fn _ -> true end),
-           all_samples: all_samples_pft]
+    {seq_pfts, seq_lists} = test_sequence_pfts(result, target_chunks_count)
+
+    pfts =
+      seq_pfts ++
+      [gt_threshold: pft(p_a_list),
+       gt_0: pft(p_a_list, & &1 > 0),
+       lt_0: pft(p_a_list, & &1 < 0),
+       all_learned: pft(p_a_list, fn _ -> true end),
+       all_samples: all_samples_pft]
 
     annual_scale = safe_div(@annual_k15_count, target_chunks_count)
-    annual_pft = Enum.map(pft, fn {key, {rate, _count}} ->
+    annual_pft = Enum.map(pfts, fn {key, {rate, _count}} ->
       1 + rate
       |> :math.pow(annual_scale)
       |> (& {key, floor(&1 - 1, 1)}).()
@@ -127,7 +129,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
      corr_filters: get_corr_filters_stats(result),
      stats: [target_chunks_count: target_chunks_count],
      pft_min_max: Enum.min_max_by(pft_spectrum, & elem(&1, 2)),
-     annual_pft: annual_pft, seq_list: seq_list, pft: pft]
+     annual_pft: annual_pft, seq: seq_lists, pfts: pfts]
     |> Keyword.update!(:stats, & Keyword.merge(&1, count_ev(p_a_list)))
   end
 
@@ -135,12 +137,28 @@ defmodule Machine.Adapters.CloudForest.Backtest do
     Path.join(data_dir_path, "build")
   end
 
+  defp test_sequence_pfts(result, target_chunks_count,
+                          seq_names \\ @seq_names) do
+    {seq_pfts, seq_lists} =
+      seq_names
+      |> Enum.map(fn atom ->
+        sequence_pft(result, p_fun: & seq_p_fun(atom, &1))
+      end)
+      |> Enum.unzip
+    seq_pfts =
+      seq_names
+      |> Enum.map(& :"seq_#{&1}")
+      |> Enum.zip(Enum.map(seq_pfts, & {&1, target_chunks_count}))
+    seq_lists = Enum.zip(seq_names, seq_lists)
+    {seq_pfts, seq_lists}
+  end
+
   @doc """
   Calculates the decisions and pft expection for the `result` sequence returned
   by `test_all/3` in *chronological* order.
   """
   def sequence_pft(result, opts \\ []) do
-    p_fun = opts[:p_fun] || &seq_p_fun/1
+    p_fun = opts[:p_fun] || & seq_p_fun(:gt_0, &1)
     initial_ba = opts[:initial_ba] || 1.0
     initial_la = opts[:initial_ba] || 1.0
     slice_rate = opts[:slice_rate] || 0.1
@@ -202,15 +220,38 @@ defmodule Machine.Adapters.CloudForest.Backtest do
     {calc_pft.(holds, ba, la), seq_list}
   end
 
-  def seq_p_fun(p) when is_nil(p), do: {:of_partial, 0.8}
-  def seq_p_fun(p) do
+  defp seq_p_fun(:gt_threshold, p) do
     cond do
+      is_nil(p) ->
+        {:of_partial, 0.8}
       p >= @pft_threshold ->
         :bi_all
       p > 0 ->
         {:remain, :"p>0"}
       true ->
         :of_all
+    end
+  end
+
+  defp seq_p_fun(:gt_0, p) do
+    cond do
+      is_nil(p) ->
+        {:of_partial, 0.8}
+      p > 0 ->
+        :bi_all
+      true ->
+        :of_all
+    end
+  end
+
+  defp seq_p_fun(:exp_1, p) do
+    cond do
+      is_nil(p) ->
+        {:of_partial, 0.8}
+      p > 0 ->
+        :bi_slice
+      true ->
+        :of_slice
     end
   end
 
