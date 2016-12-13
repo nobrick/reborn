@@ -10,11 +10,11 @@ defmodule Machine.Adapters.CloudForest.Backtest do
 
   @filters Application.get_env(:machine, :corr_filters)
   @data_storage_path Application.get_env(:machine, :data_storage_path)
-  @ev_threshold 0.003
-  @pft_threshold 0.003
+  @ev_threshold 0.001
+  @pft_threshold 0.001
   @stages_num 4
   @annual_k15_count 365 * 24 * 60 / 15
-  @seq_names ~w(gt_threshold gt_0 exp_1)a
+  @seq_names ~w(gt_threshold gt_0 exp_1 exp_2 exp_3)a
 
   @doc """
   Backtests for one.
@@ -249,9 +249,31 @@ defmodule Machine.Adapters.CloudForest.Backtest do
       is_nil(p) ->
         {:of_partial, 0.8}
       p > 0 ->
+        {:bi_partial, 0.4}
+      true ->
+        {:of_partial, 0.6}
+    end
+  end
+
+  defp seq_p_fun(:exp_2, p) do
+    cond do
+      is_nil(p) ->
+        {:of_partial, 0.8}
+      p > 0 ->
+        {:bi_partial, 0.2}
+      true ->
+        {:of_partial, 0.8}
+    end
+  end
+
+  defp seq_p_fun(:exp_3, p) do
+    cond do
+      is_nil(p) ->
+        {:of_partial, 0.8}
+      p > 0 ->
         :bi_slice
       true ->
-        :of_slice
+        {:of_partial, 0.8}
     end
   end
 
