@@ -1,6 +1,9 @@
 defmodule Caravan.Wheel.Modes.K15 do
   alias Dirk.Repo
   alias Dirk.Ticker.K15
+  import Ecto.Query, only: [from: 2]
+
+  @compile {:inline, to_float: 1}
 
   ## API
 
@@ -9,7 +12,20 @@ defmodule Caravan.Wheel.Modes.K15 do
   end
 
   def handle_pull(body) do
-    Repo.insert_all("k15_tickers", body |> map_resp |> set_d_la)
+    entries = body |> map_resp |> set_d_la
+    Repo.insert_all(K15, entries, on_conflict: on_conflict,
+                    conflict_target: :time)
+  end
+
+  defp on_conflict do
+    from k in K15, update: [set: [
+      op:   fragment("EXCLUDED.op"),
+      la:   fragment("EXCLUDED.la"),
+      hi:   fragment("EXCLUDED.hi"),
+      lo:   fragment("EXCLUDED.lo"),
+      vo:   fragment("EXCLUDED.vo"),
+      d_la: fragment("EXCLUDED.d_la")
+    ]]
   end
 
   ## Helpers
@@ -19,14 +35,15 @@ defmodule Caravan.Wheel.Modes.K15 do
   end
 
   defp to_ticker_map([time, op, hi, lo, la, vo]) do
-    %{op: op, la: la, hi: hi, lo: lo, vo: vo, time: time |> to_time}
+    %{op: to_float(op), la: to_float(la), hi: to_float(hi), lo: to_float(lo),
+      vo: to_float(vo), time: to_time(time)}
   end
+
+  defp to_float(number), do: number / 1
 
   defp set_d_la([head|tail]) do
     head = head |> Map.put(:d_la, K15.get_d_la(head))
-    t = set_d_la(:rest, tail, {head})
-    IO.inspect t
-    t
+    set_d_la(:rest, tail, {head})
   end
 
   defp set_d_la(:rest, [%{la: curr_la} = head|tail], acc) do
