@@ -4,7 +4,7 @@ defmodule Caravan.Wheel.Interval do
   alias Caravan.Wheel
 
   @interval_sup Wheel.Interval.Supervisor
-  @pulling_interval_defaults %{simple: 5_000, k15: 300_000}
+  @pulling_interval_defaults %{simple: 5_000, k15: 15_000}
 
   @doc """
   Starts Caravan.Wheel.Interval instance.
