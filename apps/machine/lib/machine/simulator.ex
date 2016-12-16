@@ -1,3 +1,6 @@
+alias Machine.Simulator.CSVParser
+NimbleCSV.define(CSVParser, separator: "\t", escape: ~s("))
+
 defmodule Machine.Simulator do
   @moduledoc """
   A module for simulating the backtest result.
@@ -28,6 +31,20 @@ defmodule Machine.Simulator do
   end
 
   @doc """
+  Writes seq_list into a CSV file.
+  """
+  def put_csv(seq_list, path) do
+    seq_list
+    |> Stream.with_index(1)
+    |> Stream.map(fn {{decision, holds, ba, la, pft}, index} ->
+      [index, inspect(decision), holds, ba, la, pft]
+    end)
+    |> (& Stream.concat([~w(n d ho ba la pft)], &1)).()
+    |> CSVParser.dump_to_iodata
+    |> (& File.write!(path, &1, [:write])).()
+  end
+
+  @doc """
   Calculates the decisions and pft expection for the `result` sequence returned
   by `Backtest.test_all/3` in *chronological* order.
   """
@@ -44,7 +61,7 @@ defmodule Machine.Simulator do
     end
     {seq_list, {holds, ba, la}} =
       Enum.map_reduce(result, {0, initial_ba, initial_la},
-                  fn {_, _, {_, p, a}, _}, {holds, ba, la} ->
+                      fn {_, _, {_, p, a}, _}, {holds, ba, la} ->
         next_la = la * (1 + a)
         remain = {holds, ba, next_la}
         decision = p_fun.(p)

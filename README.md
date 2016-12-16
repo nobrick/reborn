@@ -10,11 +10,12 @@
 
 ## the machine
 ### Backtest
-- [ ] Save predictions to a file for later uses. May use `NimbleCSV`.
+- [ ] Calculate all-time alpha, beta, sharpe ratio in seq_list and csv output.
 - [ ] Allow setting `chunk_size` without restarting the app.
 - [ ] Plot data graph.
 - [ ] Dynamically removes the target fields from lookups fields.
 - [ ] Try MS LightGBM.
+- [ ] Save simulation result to a file for later uses.
 - [x] Need a fetch_chunks(`time_start`, `time_end`) version.
 - [x] Clean up the data directory automatically.
 - [x] Include additional info(eg. time ranges for target and sample chunks) in the result.
