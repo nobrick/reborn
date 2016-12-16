@@ -7,5 +7,5 @@ erl_crash.dump
 /config/test.exs
 /config/prod.exs
 /apps/huo/config/tokens.exs
-/scrab.ex
+/scrab.exs
 /data
