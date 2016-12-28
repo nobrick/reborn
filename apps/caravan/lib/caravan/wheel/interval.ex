@@ -4,7 +4,7 @@ defmodule Caravan.Wheel.Interval do
   alias Caravan.Wheel
 
   @interval_sup Wheel.Interval.Supervisor
-  @pulling_interval_defaults %{simple: 5_000, k15: 15_000}
+  @pulling_intervals Application.get_env(:caravan, :pulling_intervals)
 
   @doc """
   Starts Caravan.Wheel.Interval instance.
@@ -20,8 +20,8 @@ defmodule Caravan.Wheel.Interval do
     `:simple` by default.
 
   - `pulling_interval`: The interval to trigger pulling. Default values:
-    * #{@pulling_interval_defaults.simple} for simple mode,
-    * #{@pulling_interval_defaults.k15} for k15 mode.
+    * #{@pulling_intervals.simple} for simple mode,
+    * #{@pulling_intervals.k15} for k15 mode.
 
   - `test_process`: The message monitoring process for testing purposes.
   """
@@ -34,7 +34,7 @@ defmodule Caravan.Wheel.Interval do
     {mode, opts} = Keyword.pop(opts, :mode, :simple)
     {interval_sup, opts} = Keyword.pop(opts, :interval_sup, @interval_sup)
     {interval, opts} = Keyword.pop(opts, :pulling_interval,
-                                   @pulling_interval_defaults[mode])
+                                   @pulling_intervals[mode])
     {test_process, _} = Keyword.pop(opts, :test_process, nil)
     %{wheel: wheel,
       mode: mode,

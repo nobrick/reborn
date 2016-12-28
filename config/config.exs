@@ -17,6 +17,7 @@ import_config "../apps/*/config/config.exs"
 #       metadata: [:user_id]
 import_config "#{Mix.env}.exs"
 config :dirk, ecto_repos: [Dirk.Repo]
+config :caravan, pulling_intervals: %{simple: 5_000, k15: 60_000}
 config :machine, pft_threshold: 0.001
 config :machine, chunk_size: 6
 config :machine, chunk_step: 1
