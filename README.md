@@ -27,8 +27,8 @@
 * Fix test issue
 
 ### Caravan.Wheel.Interval
-- [ ] Remove conflicting k15 points.
-- [ ] `insert_all` with `:on_conflict` option.
+- [x] Remove conflicting k15 points.
+- [x] `insert_all` with `:on_conflict` option.
 
 ### Azor ord
 * Finish implementing Ords transition processes
