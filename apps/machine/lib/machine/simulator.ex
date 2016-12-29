@@ -39,7 +39,7 @@ defmodule Machine.Simulator do
     |> Stream.map(fn {{decision, holds, ba, la, pft}, index} ->
       [index, inspect(decision), holds, ba, la, pft]
     end)
-    |> (& Stream.concat([~w(n d ho ba la pft)], &1)).()
+    |> (& Stream.concat([~w(n d ho ba d_la_initial pft)], &1)).()
     |> CSVParser.dump_to_iodata
     |> (& File.write!(path, &1, [:write])).()
   end
@@ -61,12 +61,14 @@ defmodule Machine.Simulator do
     end
     {seq_list, {holds, ba, la}} =
       Enum.map_reduce(result, {0, initial_ba, initial_la},
-                      fn {_, _, {_, p, a}, _}, {holds, ba, la} ->
+                      fn item, {holds, ba, la} ->
+        {_, p, a} = item[:pred]
         next_la = la * (1 + a)
         remain = {holds, ba, next_la}
         decision = p_fun.(p)
         log_state = fn decision ->
-          {decision, floor(holds), floor(ba), floor(la),
+          d_la_initial = floor((la - initial_la) / initial_la)
+          {decision, floor(holds), floor(ba), d_la_initial,
            calc_pft.(holds, ba, la)}
         end
         on = fn exp, value_fun ->

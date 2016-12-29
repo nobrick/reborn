@@ -31,9 +31,10 @@ defmodule Machine.Adapters.CloudForest.Backtest do
         Trainer.learn(dir_path)
         Predictor.save_data(dir_path, target_chunk)
         Predictor.predict(dir_path)
-        {:ok, logs, Predictor.read_prediction(dir_path), time}
+        [status: :ok, logs: logs, pred: Predictor.read_prediction(dir_path),
+         time: time]
       {:error, logs} ->
-        {:error, logs, {label, nil, d_la}, time}
+        [status: :error, logs: logs, pred: {label, nil, d_la}, time: time]
     end
   end
 
@@ -90,16 +91,18 @@ defmodule Machine.Adapters.CloudForest.Backtest do
       |> Stream.with_index
       |> Flow.from_enumerable
       |> Flow.partition(stages: @stages_num)
-      |> Flow.map(fn {target, index} ->
+      |> Flow.map(fn {[target_hd|_] = target, index} ->
         IO.puts "---- #{index}..#{target_chunks_count - 1} ----"
         subdir_path = Path.join(build_path, Integer.to_string(index))
         File.mkdir!(subdir_path)
-        test_one(subdir_path, target, lookup_chunks, opts) |> IO.inspect
+        test_one(subdir_path, target, lookup_chunks, opts)
+        |> Keyword.merge([chunk_hd: target_hd, index: index])
+        |> IO.inspect
       end)
-      |> Enum.sort_by(fn {_, _, _, time} -> time end,
+      |> Enum.sort_by(& Keyword.fetch!(&1, :time),
                       & TimeDiff.compare(&1, &2, nil, :seconds) <= 0)
-    p_a_list = Enum.filter_map(result, & elem(&1, 0) == :ok,
-                 fn {:ok, _, {_, p, a}, _} -> {p, a} end)
+    p_a_list = Enum.filter_map(result, & &1[:status] == :ok,
+                               fn t -> {_, p, a} = t[:pred]; {p, a} end)
     all_samples_pft =
       target_chunks
       |> Enum.reduce(1, fn chunk, acc ->
@@ -194,7 +197,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
 
   defp get_corr_filters_stats(result) do
     result
-    |> Enum.flat_map(fn {_atom, logs, _values, _time} -> logs end)
+    |> Enum.flat_map(& &1[:logs])
     |> Enum.reduce(%{}, fn {k, v}, acc ->
       Map.update(acc, k, {0, 0}, fn {sum, n} -> {sum + v, n + 1} end)
     end)
