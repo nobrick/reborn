@@ -89,8 +89,7 @@ defmodule Machine.DataGen do
       d_hi: (post.hi - pre.hi) / pre.hi,
       d_lo: (post.lo - pre.lo) / pre.lo,
       d_vo: (post.vo - pre.vo) / (post.vo + pre.vo + 1),
-      id: post.id,
-      time: post.time}
+      id: post.id, time: post.time, t: post}
   end
 
   @doc """
