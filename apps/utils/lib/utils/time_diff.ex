@@ -17,7 +17,7 @@ defmodule Utils.TimeDiff do
   def compare(time_0, time_1, shift, granularity \\ :minutes)
 
   def compare(%Ecto.DateTime{} = time_0, %Ecto.DateTime{} = time_1, shift,
-      granularity) when is_integer(shift) do
+      granularity) when is_integer(shift) or is_nil(shift) do
     iso_0 = Ecto.DateTime.to_iso8601(time_0) <> "Z"
     iso_1 = Ecto.DateTime.to_iso8601(time_1) <> "Z"
     compare(iso_0, iso_1, shift, granularity)
