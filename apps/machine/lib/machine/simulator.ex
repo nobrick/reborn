@@ -16,16 +16,12 @@ defmodule Machine.Simulator do
   @doc """
   Simulates each sequence strategies and generate the pfts and instructions.
   """
-  def test_sequence_pfts(result, target_chunks_count,
-                          seq_names \\ @seq_names) do
+  def test_sequence_pfts(result, seq_names \\ @seq_names) do
     {seq_info, seq_lists} =
       seq_names
       |> Enum.map(fn n -> sequence_pft(result, & seq_r_fun(n, &1)) end)
       |> Enum.unzip
-    seq_info =
-      seq_names
-      |> Enum.map(& :"seq_#{&1}")
-      |> Enum.zip(Enum.map(seq_info, & {&1, target_chunks_count}))
+    seq_info = seq_names |> Enum.map(& :"seq_#{&1}") |> Enum.zip(seq_info)
     seq_lists = Enum.zip(seq_names, seq_lists)
     {seq_info, seq_lists}
   end
@@ -83,7 +79,7 @@ defmodule Machine.Simulator do
       Enum.map_reduce(result, init_seq_pft_state(), fn datum, state ->
         datum |> secure_datum |> r_fun.() |> seq_pft_map_reducer(datum, state)
       end)
-    {[pft: floor(pft), mdd: floor(mdd), max_pft: floor(max_nav - 1)], seq_list}
+    {{floor(pft), mdd: floor(mdd), max_pft: floor(max_nav - 1)}, seq_list}
   end
 
   defp init_seq_pft_state do
