@@ -45,7 +45,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
     {measure_time?, opts} = Keyword.pop(opts, :tc, true)
     {cleanup?, opts} = Keyword.pop(opts, :cleanup, true)
     chunk_ranges = validate_chunk_ranges(target_chunks, lookup_chunks)
-    data_dir_path = make_data_dir
+    data_dir_path = make_data_dir()
     fun = fn ->
       ret =
         do_test_all(data_dir_path, target_chunks, lookup_chunks, opts)
@@ -109,8 +109,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
         (hd(chunk).d_la + 1) * acc
       end)
       |> (& {floor(&1 - 1), target_chunks_count}).()
-    {seq_pfts, seq_lists} =
-      Simulator.test_sequence_pfts(result, target_chunks_count)
+    {seq_pfts, seq_lists} = Simulator.test_sequence_pfts(result)
 
     pfts =
       seq_pfts ++
@@ -120,7 +119,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
        all_learned: pft(p_a_list, fn _ -> true end),
        all_samples: all_samples_pft]
     annual_scale = safe_div(@annual_k15_count, target_chunks_count)
-    annual_pft = Enum.map(pfts, fn {key, {rate, _count}} ->
+    annual_pft = Enum.map(pfts, fn {key, {rate, _}} ->
       1 + rate
       |> :math.pow(annual_scale)
       |> (& {key, floor(&1 - 1, 1)}).()
@@ -170,7 +169,7 @@ defmodule Machine.Adapters.CloudForest.Backtest do
     |> Enum.reduce({1, 0}, fn {_, a}, {value, count} ->
       {value * (1 + a), count + 1}
     end)
-    |> (fn {value, count} -> {floor(value - 1), count} end).()
+    |> (fn {value, count} -> {floor(value - 1), n: count} end).()
   end
 
   def get_pft_spectrum(p_a_list) do
