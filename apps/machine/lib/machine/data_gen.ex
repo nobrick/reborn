@@ -54,7 +54,11 @@ defmodule Machine.DataGen do
   Fetches and chunks data.
   """
   def fetch_chunks(offset, limit, opts \\ []) do
-    offset |> fetch_data(limit) |> into_delta_list |> chunk_data(opts)
+    offset
+    |> fetch_data(limit)
+    |> pre_process(opts[:methods])
+    |> into_delta_list
+    |> chunk_data(opts)
   end
 
   @doc """
@@ -63,15 +67,30 @@ defmodule Machine.DataGen do
   def fetch_chunks_by_time(start_time, end_time, opts \\ []) do
     start_time
     |> fetch_data_by_time(end_time)
+    |> pre_process(opts[:methods])
     |> into_delta_list
     |> chunk_data(opts)
+  end
+
+  @doc """
+  Pre-processes the data with the given methods.
+  """
+  def pre_process(data, methods \\ nil)
+      when is_list(methods) or is_nil(methods) do
+    methods = methods || [{:sma, key: :sma_s, period: 7, keep_all: true},
+                          {:sma, key: :sma_m, period: 14, keep_all: true},
+                          {:sma, key: :sma_l, period: 28, keep_all: true}]
+    Enum.reduce(methods, Enum.reverse(data), fn method, payload ->
+      Machine.Indicators.run(method, payload)
+    end)
+    |> Enum.reverse
   end
 
   @doc """
   Converts the data fetched from the database using `fetch_data/2` or
   `fetch_data_by_time/2` into a delta list in order to normalize the data.
   """
-  # TODO: Checks time consitency.
+  # TODO: Check time consitency.
   def into_delta_list(data) do
     build_delta_list(data, []) |> :lists.reverse
   end
@@ -89,7 +108,8 @@ defmodule Machine.DataGen do
       d_hi: (post.hi - pre.hi) / pre.hi,
       d_lo: (post.lo - pre.lo) / pre.lo,
       d_vo: (post.vo - pre.vo) / (post.vo + pre.vo + 1),
-      id: post.id, time: post.time, t: post}
+      id: post.id, time: post.time,
+      t: post |> Map.from_struct |> Map.delete(:__meta__)}
   end
 
   @doc """
