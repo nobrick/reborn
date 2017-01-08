@@ -10,6 +10,7 @@
 
 ## the machine
 ### Backtest
+- [ ] Calculate Maximum Drawdown (MDD).
 - [ ] Calculate all-time alpha, beta, sharpe ratio in seq_list and csv output.
 - [ ] Allow setting `chunk_size` without restarting the app.
 - [ ] Plot data graph.
