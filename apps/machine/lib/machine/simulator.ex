@@ -8,8 +8,10 @@ defmodule Machine.Simulator do
 
   import Utils.Number, only: [floor: 1]
 
+  @compile {:inline, ma_s: 1, ma_m: 1, ma_l: 1, la: 1}
   @pft_threshold Application.get_env(:machine, :pft_threshold)
-  @seq_names ~w(gt_threshold gt_0 exp_1 exp_2 exp_3)a
+  @seq_names ~w(gt_threshold gt_0 exp_1 exp_2 exp_3 e4 la_gt_ma_s ma_e4 ma_e5
+                ma_e45 ma_e45s ma_gt_0 ma_t0 ma_pure_0)a
 
   @doc """
   Simulates each sequence strategies and generate the pfts and instructions.
@@ -18,9 +20,7 @@ defmodule Machine.Simulator do
                           seq_names \\ @seq_names) do
     {seq_pfts, seq_lists} =
       seq_names
-      |> Enum.map(fn atom ->
-        sequence_pft(result, p_fun: & seq_p_fun(atom, &1))
-      end)
+      |> Enum.map(fn n -> sequence_pft(result, & seq_r_fun(n, &1)) end)
       |> Enum.unzip
     seq_pfts =
       seq_names
@@ -33,23 +33,52 @@ defmodule Machine.Simulator do
   @doc """
   Writes seq_list into a CSV file.
   """
-  def put_csv(seq_list, path) do
+  def put_csv(seq_list, method, opts \\ []) when is_atom(method) do
+    path = opts[:path] || "#{method}.txt"
+    seq_list
+    |> put_seq_to_stream(method)
+    |> CSVParser.dump_to_iodata
+    |> (& File.write!(path, &1, [:write])).()
+  end
+
+  @doc """
+  Writes all seq_lists into a single CSV file.
+  
+  The first four columns are: :index, :decision, :holds, :ba, :d_la_initial.
+  Among them, :decision, :holds and :ba are corresponding to the first method
+  in the methods list
+  """
+  def put_summary_csv(seq_lists, opts \\ []) do
+    path = opts[:path] || "summary.txt"
+    [first_method|rest_methods] = opts[:methods] || Keyword.keys(seq_lists)
+    stream = put_seq_to_stream(seq_lists[first_method], first_method)
+    rest_streams =
+      Enum.map(rest_methods, fn method ->
+        seq_lists[method]
+        |> Stream.map(fn {_, _, _, _, pft} -> [pft] end)
+        |> (& Stream.concat([~w(#{method})], &1)).()
+      end)
+    [stream|rest_streams]
+    |> Stream.zip
+    |> Stream.map(fn tuple -> tuple |> Tuple.to_list |> List.flatten end)
+    |> CSVParser.dump_to_iodata
+    |> (& File.write!(path, &1, [:write])).()
+  end
+
+  defp put_seq_to_stream(seq_list, method) when is_atom(method) do
     seq_list
     |> Stream.with_index(1)
     |> Stream.map(fn {{decision, holds, ba, la, pft}, index} ->
       [index, inspect(decision), holds, ba, la, pft]
     end)
-    |> (& Stream.concat([~w(n d ho ba d_la_initial pft)], &1)).()
-    |> CSVParser.dump_to_iodata
-    |> (& File.write!(path, &1, [:write])).()
+    |> (& Stream.concat([~w(n d ho ba d_la_initial #{method})], &1)).()
   end
 
   @doc """
   Calculates the decisions and pft expection for the `result` sequence returned
   by `Backtest.test_all/3` in *chronological* order.
   """
-  def sequence_pft(result, opts \\ []) do
-    p_fun = opts[:p_fun] || & seq_p_fun(:gt_0, &1)
+  def sequence_pft(result, r_fun, opts \\ []) do
     initial_ba = opts[:initial_ba] || 1.0
     initial_la = opts[:initial_ba] || 1.0
     slice_rate = opts[:slice_rate] || 0.1
@@ -61,11 +90,11 @@ defmodule Machine.Simulator do
     end
     {seq_list, {holds, ba, la}} =
       Enum.map_reduce(result, {0, initial_ba, initial_la},
-                      fn item, {holds, ba, la} ->
-        {_, p, a} = item[:pred]
+                      fn datum, {holds, ba, la} ->
+        {_, _, a} = datum[:pred]
         next_la = la * (1 + a)
         remain = {holds, ba, next_la}
-        decision = p_fun.(p)
+        decision = datum |> secure_datum |> r_fun.()
         log_state = fn decision ->
           d_la_initial = floor((la - initial_la) / initial_la)
           {decision, floor(holds), floor(ba), d_la_initial,
@@ -113,7 +142,19 @@ defmodule Machine.Simulator do
     {calc_pft.(holds, ba, la), seq_list}
   end
 
-  defp seq_p_fun(:gt_threshold, p) do
+  defp secure_datum(datum) do
+    {_, p, _} = datum[:pred]
+    [_|prev_chunk] = datum[:chunk]
+    datum
+    |> put_in([:p], p)
+    |> put_in([:prev_chunk], prev_chunk)
+    |> Keyword.drop([:pred, :chunk])
+  end
+
+  ## Sequence functions
+
+  defp seq_r_fun(:gt_threshold, datum) do
+    p = datum[:p]
     cond do
       is_nil(p) ->
         {:of_partial, 0.8}
@@ -126,7 +167,8 @@ defmodule Machine.Simulator do
     end
   end
 
-  defp seq_p_fun(:gt_0, p) do
+  defp seq_r_fun(:gt_0, datum) do
+    p = datum[:p]
     cond do
       is_nil(p) ->
         {:of_partial, 0.8}
@@ -137,7 +179,8 @@ defmodule Machine.Simulator do
     end
   end
 
-  defp seq_p_fun(:exp_1, p) do
+  defp seq_r_fun(:exp_1, datum) do
+    p = datum[:p]
     cond do
       is_nil(p) ->
         {:of_partial, 0.8}
@@ -148,7 +191,8 @@ defmodule Machine.Simulator do
     end
   end
 
-  defp seq_p_fun(:exp_2, p) do
+  defp seq_r_fun(:exp_2, datum) do
+    p = datum[:p]
     cond do
       is_nil(p) ->
         {:of_partial, 0.8}
@@ -159,7 +203,8 @@ defmodule Machine.Simulator do
     end
   end
 
-  defp seq_p_fun(:exp_3, p) do
+  defp seq_r_fun(:exp_3, datum) do
+    p = datum[:p]
     cond do
       is_nil(p) ->
         {:of_partial, 0.8}
@@ -168,5 +213,177 @@ defmodule Machine.Simulator do
       true ->
         {:of_partial, 0.8}
     end
+  end
+
+  defp seq_r_fun(:e4, datum) do
+    p = datum[:p]
+    [c1|[c2|_]] = datum[:prev_chunk]
+    cond do
+      is_nil(p) or not has_ma?([c1, c2]) ->
+        :of_all
+      base_e4(p, c1, c2) ->
+        :bi_all
+      true ->
+        :of_all
+    end
+  end
+
+  defp seq_r_fun(:la_gt_ma_s, datum) do
+    p = datum[:p]
+    [c1|[c2|_]] = datum[:prev_chunk]
+    cond do
+      is_nil(p) or not has_ma?([c1, c2]) ->
+        :of_all
+      base_la_gt_ma_s(p, c1, c2) ->
+        :bi_all
+      true ->
+        :of_all
+    end
+  end
+
+  defp seq_r_fun(:ma_pure_0, datum) do
+    p = datum[:p]
+    [c1|[c2|_]] = datum[:prev_chunk]
+    cond do
+      is_nil(p) or not has_ma?([c1, c2]) ->
+        :of_all
+      base_ma_pure_0(c1, c2) ->
+        :bi_all
+      true ->
+        :of_all
+    end
+  end
+
+  defp seq_r_fun(:ma_e4, datum) do
+    p = datum[:p]
+    [c1|[c2|_]] = datum[:prev_chunk]
+    cond do
+      is_nil(p) or not has_ma?([c1, c2]) ->
+        :of_all
+      base_e4(p, c1, c2) ->
+        :bi_all
+      base_ma_pure_0(c1, c2) ->
+        :bi_all
+      true ->
+        :of_all
+    end
+  end
+
+  defp seq_r_fun(:ma_e5, datum) do
+    p = datum[:p]
+    [c1|[c2|_]] = datum[:prev_chunk]
+    cond do
+      is_nil(p) or not has_ma?([c1, c2]) ->
+        :of_all
+      base_la_gt_ma_s(p, c1, c2) ->
+        :bi_all
+      base_ma_pure_0(c1, c2) ->
+        :bi_all
+      true ->
+        :of_all
+    end
+  end
+
+  defp seq_r_fun(:ma_e45, datum) do
+    p = datum[:p]
+    [c1|[c2|_]] = datum[:prev_chunk]
+    cond do
+      is_nil(p) or not has_ma?([c1, c2]) ->
+        :of_all
+      base_e4(p, c1, c2) ->
+        :bi_all
+      base_la_gt_ma_s(p, c1, c2) ->
+        :bi_all
+      base_ma_pure_0(c1, c2) ->
+        :bi_all
+      true ->
+        :of_all
+    end
+  end
+
+  defp seq_r_fun(:ma_e45s, datum) do
+    p = datum[:p]
+    [c1|[c2|_]] = datum[:prev_chunk]
+    cond do
+      is_nil(p) or not has_ma?([c1, c2]) ->
+        :of_all
+      base_e4(p, c1, c2) ->
+        :bi_all
+      base_la_gt_ma_s(p, c1, c2) and ma_s(c1) >= ma_m(c1) ->
+        :bi_all
+      base_ma_pure_0(c1, c2) ->
+        :bi_all
+      true ->
+        :of_all
+    end
+  end
+
+  defp seq_r_fun(:ma_gt_0, datum) do
+    p = datum[:p]
+    [c1|[c2|_]] = datum[:prev_chunk]
+    cond do
+      is_nil(p) or not has_ma?([c1, c2]) ->
+        :of_all
+      p > 0 ->
+        :bi_all
+      base_ma_pure_0(c1, c2) ->
+        :bi_all
+      true ->
+        :of_all
+    end
+  end
+
+  defp seq_r_fun(:ma_t0, datum) do
+    p = datum[:p]
+    [c1|[c2|[c3|_]]] = datum[:prev_chunk]
+    cond do
+      is_nil(p) or not has_ma?([c1, c2, c3]) ->
+        :of_all
+      base_e4(p, c1, c2) ->
+        :bi_all
+      base_la_gt_ma_s(p, c1, c2) ->
+        :bi_all
+      p > 0 and ma_s(c1) >= ma_s(c2) and ma_s(c2) >= ma_s(c3) ->
+        :bi_all
+      base_ma_pure_0(c1, c2) ->
+        :bi_all
+      true ->
+        :of_all
+    end
+  end
+
+  ## Base functions
+
+  defp base_la_gt_ma_s(p, c1, _c2) do
+    p > 0 and la(c1) >= ma_s(c1)
+  end
+
+  defp base_e4(p, c1, c2) do
+    p > 0 and ma_s(c1) >= ma_m(c1) and
+              ma_s(c1) >= ma_s(c2) and
+              ma_m(c1) >= ma_m(c2)
+  end
+
+  defp base_ma_pure_0(c1, c2) do
+    ma_s(c1) >= ma_m(c1) and
+    ma_s(c1) >= ma_s(c2) and
+    ma_m(c1) >= ma_m(c2) and
+    ma_l(c1) >= ma_l(c2) and
+    la(c1) >= ma_s(c1)
+  end
+
+  ## Helpers
+
+  defp ma_s(chunk_datum), do: chunk_datum[:t][:sma_s]
+  defp ma_m(chunk_datum), do: chunk_datum[:t][:sma_m]
+  defp ma_l(chunk_datum), do: chunk_datum[:t][:sma_l]
+  defp la(chunk_datum), do: chunk_datum[:t][:la]
+
+  defp has_ma?(chunk_datums) when is_list(chunk_datums) do
+    Enum.all?(chunk_datums, &has_ma?/1)
+  end
+
+  defp has_ma?(chunk_datum) do
+    ma_s(chunk_datum) && ma_m(chunk_datum) && ma_l(chunk_datum)
   end
 end
