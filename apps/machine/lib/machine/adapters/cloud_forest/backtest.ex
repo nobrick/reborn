@@ -91,12 +91,12 @@ defmodule Machine.Adapters.CloudForest.Backtest do
       |> Stream.with_index
       |> Flow.from_enumerable
       |> Flow.partition(stages: @stages_num)
-      |> Flow.map(fn {[target_hd|_] = target, index} ->
+      |> Flow.map(fn {target, index} ->
         IO.puts "---- #{index}..#{target_chunks_count - 1} ----"
         subdir_path = Path.join(build_path, Integer.to_string(index))
         File.mkdir!(subdir_path)
         test_one(subdir_path, target, lookup_chunks, opts)
-        |> Keyword.merge([chunk_hd: target_hd, index: index])
+        |> Keyword.merge([chunk: target, index: index])
         |> IO.inspect
       end)
       |> Enum.sort_by(& Keyword.fetch!(&1, :time),
