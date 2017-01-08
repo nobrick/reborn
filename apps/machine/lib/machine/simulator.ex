@@ -8,7 +8,7 @@ defmodule Machine.Simulator do
 
   import Utils.Number, only: [floor: 1]
 
-  @compile {:inline, ma_s: 1, ma_m: 1, ma_l: 1, la: 1}
+  @compile {:inline, init_seq_pft_state: 0, ma_s: 1, ma_m: 1, ma_l: 1, la: 1}
   @pft_threshold Application.get_env(:machine, :pft_threshold)
   @seq_names ~w(gt_threshold gt_0 exp_1 exp_2 exp_3 e4 la_gt_ma_s ma_e4 ma_e5
                 ma_e45 ma_e45s ma_gt_0 ma_t0 ma_pure_0)a
@@ -18,16 +18,16 @@ defmodule Machine.Simulator do
   """
   def test_sequence_pfts(result, target_chunks_count,
                           seq_names \\ @seq_names) do
-    {seq_pfts, seq_lists} =
+    {seq_info, seq_lists} =
       seq_names
       |> Enum.map(fn n -> sequence_pft(result, & seq_r_fun(n, &1)) end)
       |> Enum.unzip
-    seq_pfts =
+    seq_info =
       seq_names
       |> Enum.map(& :"seq_#{&1}")
-      |> Enum.zip(Enum.map(seq_pfts, & {&1, target_chunks_count}))
+      |> Enum.zip(Enum.map(seq_info, & {&1, target_chunks_count}))
     seq_lists = Enum.zip(seq_names, seq_lists)
-    {seq_pfts, seq_lists}
+    {seq_info, seq_lists}
   end
 
   @doc """
@@ -75,71 +75,53 @@ defmodule Machine.Simulator do
   end
 
   @doc """
-  Calculates the decisions and pft expection for the `result` sequence returned
-  by `Backtest.test_all/3` in *chronological* order.
+  Calculates the decisions and accumulated info for the `result` sequence
+  returned by `Backtest.test_all/3` in *chronological* order.
   """
-  def sequence_pft(result, r_fun, opts \\ []) do
-    initial_ba = opts[:initial_ba] || 1.0
-    initial_la = opts[:initial_ba] || 1.0
-    slice_rate = opts[:slice_rate] || 0.1
-    least_b_partial_scale = opts[:least_b_partial_scale] || 0.001
-    slice = initial_ba * slice_rate
-    least_b_partial = initial_ba * least_b_partial_scale
-    calc_pft = fn holds, ba, la ->
-      floor((ba + holds * la) / initial_ba - 1)
-    end
-    {seq_list, {holds, ba, la}} =
-      Enum.map_reduce(result, {0, initial_ba, initial_la},
-                      fn datum, {holds, ba, la} ->
-        {_, _, a} = datum[:pred]
-        next_la = la * (1 + a)
-        remain = {holds, ba, next_la}
-        decision = datum |> secure_datum |> r_fun.()
-        log_state = fn decision ->
-          d_la_initial = floor((la - initial_la) / initial_la)
-          {decision, floor(holds), floor(ba), d_la_initial,
-           calc_pft.(holds, ba, la)}
-        end
-        on = fn exp, value_fun ->
-          if exp do
-            {log_state.(decision), value_fun.()}
-          else
-            {log_state.({:remain, decision}), remain}
-          end
-        end
-        case decision do
-          :bi_slice ->
-            on.(ba >= slice, fn ->
-              {holds + slice / la, ba - slice, next_la}
-            end)
-          :of_slice ->
-            h_slice = slice / la
-            on.(holds >= h_slice, fn ->
-              {holds - h_slice, ba + slice, next_la}
-            end)
-          :bi_all ->
-            on.(ba > 0, fn ->
-              {holds + ba / la, 0, next_la}
-            end)
-          :of_all ->
-            on.(holds > 0, fn ->
-              {0, ba + holds * la, next_la}
-            end)
-          {:bi_partial, b_partial_scale} ->
-            b_partial = ba * b_partial_scale
-            on.(b_partial >= least_b_partial, fn ->
-              {holds + b_partial / la, ba - b_partial, next_la}
-            end)
-          {:of_partial, h_partial_scale} ->
-            h_partial = holds * h_partial_scale
-            on.(h_partial * la >= least_b_partial, fn ->
-              {holds - h_partial, ba + h_partial * la, next_la}
-            end)
-          {:remain, _} ->
-            {log_state.(decision), remain}
-        end
+  def sequence_pft(result, r_fun) do
+    {seq_list, {_, _, _, %{pft: pft, mdd: mdd, max_nav: max_nav}}} =
+      Enum.map_reduce(result, init_seq_pft_state(), fn datum, state ->
+        datum |> secure_datum |> r_fun.() |> seq_pft_map_reducer(datum, state)
       end)
-    {calc_pft.(holds, ba, la), seq_list}
+    {[pft: floor(pft), mdd: floor(mdd), max_pft: floor(max_nav - 1)], seq_list}
+  end
+
+  defp init_seq_pft_state do
+    {0, 1.0, 1.0, %{nav: 1.0, pft: 0, max_nav: 1.0, mdd: 0}}
+  end
+
+  defp next_seq_pft_state({next_holds, next_ba}, datum,
+       {_, _, curr_la, %{max_nav: curr_max_nav, mdd: curr_mdd}} = _state) do
+    {_, _, a} = datum[:pred]
+    next_la = curr_la * (1 + a)
+    next_nav = next_ba + next_holds * next_la
+    next_pft = next_nav - 1.0
+    next_max_nav = max(curr_max_nav, next_nav)
+    next_mdd = max(curr_mdd, curr_max_nav - next_nav)
+    next_derived = %{nav: next_nav, pft: next_pft, max_nav: next_max_nav,
+                     mdd: next_mdd}
+    {next_holds, next_ba, next_la, next_derived}
+  end
+
+  defp seq_pft_mapper(decision, {holds, ba, la, %{pft: pft}} = _state) do
+    {decision, floor(holds), floor(ba), floor(la - 1), floor(pft)}
+  end
+
+  defp seq_pft_map_reducer(decision, datum, state) do
+    {condition, value_fun} = seq_decide(decision, state)
+    if condition do
+      {seq_pft_mapper(decision, state),
+       next_seq_pft_state(value_fun.(), datum, state)}
+    else
+      wrapped_decision =
+        case decision do
+          {:remain, _} -> decision
+          _            -> {:remain, decision}
+        end
+      {holds, ba, _, _} = state
+      {seq_pft_mapper(wrapped_decision, state),
+       next_seq_pft_state({holds, ba}, datum, state)}
+    end
   end
 
   defp secure_datum(datum) do
@@ -149,6 +131,42 @@ defmodule Machine.Simulator do
     |> put_in([:p], p)
     |> put_in([:prev_chunk], prev_chunk)
     |> Keyword.drop([:pred, :chunk])
+  end
+
+  defp seq_decide(decision, {holds, ba, la, _derived} = _state) do
+    slice = 0.1
+    least_b_partial = 0.001
+    case decision do
+      :bi_slice ->
+        {ba >= slice, fn ->
+          {holds + slice / la, ba - slice}
+        end}
+      :of_slice ->
+        h_slice = slice / la
+        {holds >= h_slice, fn ->
+          {holds - h_slice, ba + slice}
+        end}
+      :bi_all ->
+        {ba > 0, fn ->
+          {holds + ba / la, 0}
+        end}
+      :of_all ->
+        {holds > 0, fn ->
+          {0, ba + holds * la}
+        end}
+      {:bi_partial, b_partial_scale} ->
+        b_partial = ba * b_partial_scale
+        {b_partial >= least_b_partial, fn ->
+          {holds + b_partial / la, ba - b_partial}
+        end}
+      {:of_partial, h_partial_scale} ->
+        h_partial = holds * h_partial_scale
+        {h_partial * la >= least_b_partial, fn ->
+          {holds - h_partial, ba + h_partial * la}
+        end}
+      {:remain, _} ->
+        {false, nil}
+    end
   end
 
   ## Sequence functions
