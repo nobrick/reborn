@@ -10,11 +10,11 @@ defmodule Azor.Ords.ManagerTest do
 
   defmodule OrdClient do
     def bi_mkt(_amt) do
-      {:ok, %{"id" => random, "result" => "success"}}
+      {:ok, %{"id" => random(), "result" => "success"}}
     end
 
     def of_mkt(_amt) do
-      {:ok, %{"id" => random, "result" => "success"}}
+      {:ok, %{"id" => random(), "result" => "success"}}
     end
 
     defp random do
@@ -66,7 +66,7 @@ defmodule Azor.Ords.ManagerTest do
   describe "add_bi_mkt/3 and add_of_mkt/3" do
     test "before processing", %{test: test} do
       {:ok, state} = init(%{ord_client: OrdClient, p_context: test,
-                            test_process: self})
+                            test_process: self()})
       args = {:add_bi_mkt, 2, %{cond: {:now}}}
       assert {:reply, {:ok, id}, %{ords: ords}} = handle_call(args, nil, state)
       assert %{^id => %{action: :add_bi_mkt, amt: 2, id: ^id,
@@ -120,7 +120,7 @@ defmodule Azor.Ords.ManagerTest do
 
   defp start_manager(context) do
     args =
-      %{ord_client: OrdClient, test_process: self}
+      %{ord_client: OrdClient, test_process: self()}
       |> put_present([:watcher], context[:broadcaster], & %{subscribe_to: &1})
       |> Map.put(:p_context, context[:test])
     {:ok, pid} = Manager.start_link(args)

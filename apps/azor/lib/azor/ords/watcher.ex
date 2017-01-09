@@ -30,7 +30,7 @@ defmodule Azor.Ords.Watcher do
         {:ok, ticker} ->
           if satisfy?(ticker, condition, state) do
             Manager.sync_ord(manager, id, :processing, %{ticker: ticker})
-            notify_test_process({:watcher, :satisfied, self, id}, state)
+            notify_test_process({:watcher, :satisfied, self(), id}, state)
             exit(:normal)
           end
         error ->

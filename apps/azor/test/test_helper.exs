@@ -15,12 +15,12 @@ defmodule Azor.TestHelper do
   end
 
   def gproc_unregister_all do
-    names = Enum.map(gproc_registered, fn [{_, _, k}|_] -> k end)
+    names = Enum.map(gproc_registered(), fn [{_, _, k}|_] -> k end)
     :gproc.munreg(:n, :l, names)
   end
 
   def gproc_stop_all_registered do
-    gproc_registered
+    gproc_registered()
     |> Enum.map(fn [_, pid, _] -> pid end)
     |> Enum.each(& Process.exit(&1, :kill))
   end
