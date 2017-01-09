@@ -5,7 +5,6 @@ defmodule Dirk.Ticker.K15Test do
   alias Dirk.Repo
 
   test "distinct_on_time/1" do
-    import Ecto.DateTime, only: [cast!: 1]
     query = distinct_on_time(K15)
     sql_head = ~S{SELECT DISTINCT ON (k0."time")}
     sql_tail = ~S{ORDER BY k0."time" DESC, k0."vo" DESC}

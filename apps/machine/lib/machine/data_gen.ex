@@ -20,7 +20,7 @@ defmodule Machine.DataGen do
   the associated delta list count is less than ticker count by 1.
   """
   def fetch_data(offset, limit) do
-    K15.distinct_on_time
+    K15.order_by_time_desc
     |> offset(^offset)
     |> limit(^(limit + 1))
     |> Repo.all
@@ -43,7 +43,7 @@ defmodule Machine.DataGen do
   end
 
   def fetch_data_by_time(start_time, end_time) do
-    K15.distinct_on_time
+    K15.order_by_time_desc
     |> where([k],
          k.time <= ^end_time and
          k.time >= datetime_add(^start_time, -15, "minute"))

@@ -22,6 +22,14 @@ defmodule Dirk.Ticker.K15 do
     end
   end
 
+  def order_by_time_desc(model \\ K15) do
+    from t in model, order_by: [desc: :time]
+  end
+
+  @doc """
+  This method is DEPRECATED since unique index on :time has been set. Use
+  `order_by_time_desc/1` instead.
+  """
   def distinct_on_time(model \\ K15) do
     from t in model, distinct: [desc: :time], order_by: [desc: :vo]
   end
