@@ -93,7 +93,7 @@ defmodule Machine.Simulator do
     next_nav = next_ba + next_holds * next_la
     next_pft = next_nav - 1.0
     next_max_nav = max(curr_max_nav, next_nav)
-    next_mdd = max(curr_mdd, curr_max_nav - next_nav)
+    next_mdd = max(curr_mdd, (curr_max_nav - next_nav) / curr_max_nav)
     next_derived = %{nav: next_nav, pft: next_pft, max_nav: next_max_nav,
                      mdd: next_mdd}
     {next_holds, next_ba, next_la, next_derived}
