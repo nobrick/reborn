@@ -3,8 +3,6 @@ defmodule Machine.Indicators do
   This module defines indicator functions.
   """
 
-  alias Utils.TimeDiff
-
   def run({:sma, period}, payload) do
     __MODULE__.SMA.run(payload, period)
   end
