@@ -13,7 +13,7 @@ defmodule Caravan.Wheel.Modes.K15 do
 
   def handle_pull(body) do
     entries = body |> map_resp |> set_d_la
-    Repo.insert_all(K15, entries, on_conflict: on_conflict,
+    Repo.insert_all(K15, entries, on_conflict: on_conflict(),
                     conflict_target: :time)
   end
 
