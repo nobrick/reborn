@@ -37,8 +37,8 @@ defmodule Dirk.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [{:poison, "~> 2.0"},
-     {:postgrex, ">= 0.11.2"},
-     {:ecto, "~> 2.1.0-rc.3"},
+     {:postgrex, ">= 0.13.0"},
+     {:ecto, "~> 2.1.0"},
      {:utils, in_umbrella: true}]
   end
 end
