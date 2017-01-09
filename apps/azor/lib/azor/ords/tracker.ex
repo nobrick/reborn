@@ -45,7 +45,7 @@ defmodule Azor.Ords.Tracker do
   end
 
   defp handle_resp(_, %{interval: interval} = state) do
-    Process.send_after(self, :track, interval)
+    Process.send_after(self(), :track, interval)
     {:noreply, incr_retries(state)}
   end
 

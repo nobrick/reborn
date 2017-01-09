@@ -94,7 +94,7 @@ defmodule Mutt.SlackMessaging do
 
   def init(%{token: _} = args) do
     state = args |> Map.put_new(:channel, @default_channel)
-    send(self, :start_slack)
+    send(self(), :start_slack)
     {:ok, state}
   end
 

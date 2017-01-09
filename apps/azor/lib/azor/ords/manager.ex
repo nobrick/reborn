@@ -196,7 +196,7 @@ defmodule Azor.Ords.Manager do
   defp transition(%{test_process: test_process} = state, %{id: id,
        watch: %{cond: condition}} = ord, {:initial, :watched}, _info) do
     args = %{ord: ord, cond: condition, test_process: test_process}
-           |> put_present(:ords_manager, test_process, self)
+           |> put_present(:ords_manager, test_process, self())
            |> put_present(:subscribe_to, state[:watcher][:subscribe_to])
            |> put_present(:p_context, state[:p_context])
     {:ok, _pid} = WatcherSupervisor.start_child(args)
@@ -204,7 +204,7 @@ defmodule Azor.Ords.Manager do
   end
 
   defp transition(state, %{id: id} = _ord, {:watched, :processing}, _info) do
-    send(self, {:process_ord, id})
+    send(self(), {:process_ord, id})
     update_status(state, id, :processing)
   end
 

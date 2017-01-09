@@ -125,7 +125,7 @@ defmodule Azor.Ords.WatcherTest do
 
   defp start_watcher(context) do
     args =
-      %{ord: %{id: 3}, cond: {:now}, test_process: self}
+      %{ord: %{id: 3}, cond: {:now}, test_process: self()}
       |> put_present([:ords_manager], context[:manager])
       |> put_present([:subscribe_to], context[:broadcaster])
       |> Map.put(:p_context, context[:test])
