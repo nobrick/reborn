@@ -11,7 +11,7 @@ defmodule Machine.Simulator do
   @compile {:inline, init_seq_pft_state: 0, ma_s: 1, ma_m: 1, ma_l: 1, la: 1}
   @pft_threshold Application.get_env(:machine, :pft_threshold)
   @seq_names ~w(gt_threshold gt_0 exp_1 exp_2 exp_3 e4 la_gt_ma_s ma_e4 ma_e5
-                ma_e45 ma_e45s ma_gt_0 s_t0 ma_pure_0)a
+                ma_e45 ma_e45s ma_gt_0 ma_pure_0 ma_pure_0s ma_pure_1 s_t0)a
 
   @doc """
   Simulates each sequence strategies and generate the pfts and instructions.
@@ -75,29 +75,34 @@ defmodule Machine.Simulator do
   returned by `Backtest.test_all/3` in *chronological* order.
   """
   def sequence_pft(result, r_fun) do
-    {seq_list, {_, _, _, %{pft: pft, mdd: mdd, max_nav: max_nav}}} =
+    {seq_list, {_, _, _, %{pft: pft, mdd: mdd, max_nav: max_nav,
+                           min_nav: min_nav}}} =
       Enum.map_reduce(result, init_seq_pft_state(), fn datum, state ->
         seq_pft_map_reducer(datum, state, r_fun)
       end)
-    {{floor(pft), mdd: floor(mdd), max_pft: floor(max_nav - 1)}, seq_list}
+    {{floor(pft), mdd: floor(mdd), max_pft: floor(max_nav - 1),
+      min_pft: floor(min_nav - 1)}, seq_list}
   end
 
   defp init_seq_pft_state do
-    {0, 1.0, 1.0, %{nav: 1.0, pft: 0, max_nav: 1.0, dd: 0, mdd: 0,
-                    r_fun_acc: %{}}}
+    {0, 1.0, 1.0, %{nav: 1.0, pft: 0, max_nav: 1.0, min_nav: 1.0, dd: 0,
+                    mdd: 0, r_fun_acc: %{}}}
   end
 
   defp next_seq_pft_state({next_holds, next_ba}, next_r_fun_acc, datum,
-       {_, _, curr_la, %{max_nav: curr_max_nav, mdd: curr_mdd}} = _state) do
+       {_, _, curr_la, %{max_nav: curr_max_nav, min_nav: curr_min_nav,
+       mdd: curr_mdd}} = _state) do
     {_, _, a} = datum[:pred]
     next_la = curr_la * (1 + a)
     next_nav = next_ba + next_holds * next_la
     next_pft = next_nav - 1.0
     next_max_nav = max(curr_max_nav, next_nav)
+    next_min_nav = min(curr_min_nav, next_nav)
     next_dd = (curr_max_nav - next_nav) / curr_max_nav
     next_mdd = max(curr_mdd, next_dd)
     next_derived = %{nav: next_nav, pft: next_pft, max_nav: next_max_nav,
-                     dd: next_dd, mdd: next_mdd, r_fun_acc: next_r_fun_acc}
+                     min_nav: next_min_nav, dd: next_dd, mdd: next_mdd,
+                     r_fun_acc: next_r_fun_acc}
     {next_holds, next_ba, next_la, next_derived}
   end
 
@@ -290,6 +295,32 @@ defmodule Machine.Simulator do
     end
   end
 
+  defp seq_r_fun(:ma_pure_0s, datum, _) do
+    p = datum[:p]
+    [c1|[c2|_]] = datum[:prev_chunk]
+    cond do
+      is_nil(p) or not has_ma?([c1, c2]) ->
+        :of_all
+      base_ma_pure_0s(c1, c2) ->
+        :bi_all
+      true ->
+        :of_all
+    end
+  end
+
+  defp seq_r_fun(:ma_pure_1, datum, _) do
+    p = datum[:p]
+    [c1|[c2|_]] = datum[:prev_chunk]
+    cond do
+      is_nil(p) or not has_ma?([c1, c2]) ->
+        :of_all
+      base_ma_pure_1(c1, c2) ->
+        :bi_all
+      true ->
+        :of_all
+    end
+  end
+
   defp seq_r_fun(:ma_e4, datum, _) do
     p = datum[:p]
     [c1|[c2|_]] = datum[:prev_chunk]
@@ -404,6 +435,8 @@ defmodule Machine.Simulator do
         go.(:of_all)
       base_ma_pure_0(c1, c2) ->
         go.(:bi_all)
+      base_ma_pure_1(c1, c2) ->
+        go.(:bi_all)
       p > 0 and risk_count <= 0 ->
         go.(:bi_all)
       true ->
@@ -424,11 +457,27 @@ defmodule Machine.Simulator do
   end
 
   defp base_ma_pure_0(c1, c2) do
+    la(c1) >= ma_s(c1) and
     ma_s(c1) >= ma_m(c1) and
-    ma_s(c1) >= ma_s(c2) and
-    ma_m(c1) >= ma_m(c2) and
-    ma_l(c1) >= ma_l(c2) and
-    la(c1) >= ma_s(c1)
+    ma_s(c1) >= ma_s(c2) and # ema
+    ma_m(c1) >= ma_m(c2) and # ema
+    ma_l(c1) >= ma_l(c2) # ema
+  end
+
+  defp base_ma_pure_0s(c1, c2) do
+    la(c1) >= ma_s(c1) and
+    ma_s(c1) >= ma_m(c1) and
+    ma_m(c1) >= ma_l(c1) and
+    ma_s(c1) >= ma_s(c2) and # ema
+    ma_m(c1) >= ma_m(c2) and # ema
+    ma_l(c1) >= ma_l(c2) # ema
+  end
+
+  defp base_ma_pure_1(c1, c2) do
+    la(c1) >= ma_s(c1) and
+    ma_s(c1) >= ma_m(c1) and
+    ma_m(c1) >= ma_l(c1) and
+    la(c1) >= la(c2) # ema
   end
 
   ## Helpers
