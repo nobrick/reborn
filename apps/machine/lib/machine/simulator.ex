@@ -408,8 +408,8 @@ defmodule Machine.Simulator do
     has_ma = has_ma?([c1, c2, c3])
     {la_pulse, ma_pulse} =
       if has_ma do
-        {(ma_s(c1) - la(c1)) / ma_s(c1) + 1.5 * dd,
-         (ma_l(c1) - ma_s(c1)) / ma_l(c1) + 1.5 * dd}
+        {(ma_s(c1) - la(c1)) / ma_s(c1) + 1.0 * dd,
+         (ma_l(c1) - ma_s(c1)) / ma_l(c1) + 1.0 * dd}
       else
         {-1, -1}
       end
