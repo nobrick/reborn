@@ -5,12 +5,10 @@ defmodule Machine.DataGen do
 
   alias Dirk.Ticker.K15
   alias Dirk.Repo
-  alias Utils.TimeDiff
   import Ecto.Query, only: [offset: 2, limit: 2, where: 3]
+  import Machine.DataHelper, only: [bias: 2, chunk_elems_in_seq?: 2,
+                                    chunk_size: 1]
 
-  @compile {:inline, chunk_elems_in_seq?: 2}
-
-  @chunk_size Application.get_env(:machine, :chunk_size)
   @chunk_step Application.get_env(:machine, :chunk_step)
 
   @doc """
@@ -19,11 +17,16 @@ defmodule Machine.DataGen do
   Behind the scenes, this method queries the database with `limit + 1` since
   the associated delta list count is less than ticker count by 1.
   """
-  def fetch_data(offset, limit) do
+  def fetch_data(offset, limit, opts \\ []) do
     K15.order_by_time_desc
     |> offset(^offset)
     |> limit(^(limit + 1))
-    |> Repo.all
+    |> Repo.all(opts)
+  end
+
+  def fetch_latest do
+    [latest] = K15.order_by_time_desc |> limit(1) |> Repo.all(log: false)
+    latest
   end
 
   @doc """
@@ -54,8 +57,14 @@ defmodule Machine.DataGen do
   Fetches and chunks data.
   """
   def fetch_chunks(offset, limit, opts \\ []) do
-    offset
-    |> fetch_data(limit)
+    offset |> fetch_data(limit) |> build_chunks(opts)
+  end
+
+  @doc """
+  Builds chunks from fetched data.
+  """
+  def build_chunks(data, opts \\ []) do
+    data
     |> pre_process(opts[:methods])
     |> into_delta_list
     |> chunk_data(opts)
@@ -77,9 +86,11 @@ defmodule Machine.DataGen do
   """
   def pre_process(data, methods \\ nil)
       when is_list(methods) or is_nil(methods) do
-    methods = methods || [{:sma, key: :sma_s, period: 7, keep_all: true},
+    methods = methods || [{:sma, key: :sma_xs, period: 3, keep_all: true},
+                          {:sma, key: :sma_s, period: 7, keep_all: true},
                           {:sma, key: :sma_m, period: 14, keep_all: true},
-                          {:sma, key: :sma_l, period: 28, keep_all: true}]
+                          {:sma, key: :sma_l, period: 28, keep_all: true},
+                          {:sma, key: :sma_xl, period: 56}]
     Enum.reduce(methods, Enum.reverse(data), fn method, payload ->
       Machine.Indicators.run(method, payload)
     end)
@@ -102,30 +113,57 @@ defmodule Machine.DataGen do
     build_delta_list(tail, [build_delta(post, pre)|acc])
   end
 
+  defp build_delta(%K15{} = post, %K15{} = pre) do
+    build_delta(Map.from_struct(post), Map.from_struct(pre))
+  end
+
   defp build_delta(post, pre) do
-    %{d_op: (post.op - pre.op) / pre.op,
-      d_la: (post.la - pre.la) / pre.la,
-      d_hi: (post.hi - pre.hi) / pre.hi,
-      d_lo: (post.lo - pre.lo) / pre.lo,
+    %{d_op: bias(post.op, pre.op),
+      d_la: bias(post.la, pre.la),
+      d_hi: bias(post.hi, pre.hi),
+      d_lo: bias(post.lo, pre.lo),
       d_vo: (post.vo - pre.vo) / (post.vo + pre.vo + 1),
+      bias_hi_s: na_or_value(post, [:sma_s], fn ->
+        bias(post.hi, post.sma_s)
+      end),
+      bias_lo_s: na_or_value(post, [:sma_s], fn ->
+        bias(post.lo, post.sma_s)
+      end),
+      bias_s_m: na_or_value(post, [:sma_s, :sma_m], fn ->
+        bias(post.sma_s, post.sma_m)
+      end),
+      bias_m_l: na_or_value(post, [:sma_m, :sma_l], fn ->
+        bias(post.sma_m, post.sma_l)
+      end),
+      bias_l_xl: na_or_value(post, [:sma_l, :sma_xl], fn ->
+        bias(post.sma_l, post.sma_xl)
+      end),
+      bias_la_s: na_or_value(post, [:sma_s], fn ->
+        bias(post.la, post.sma_s)
+      end),
+      bias_la_m: na_or_value(post, [:sma_m], fn ->
+        bias(post.la, post.sma_m)
+      end),
       id: post.id, time: post.time,
-      t: post |> Map.from_struct |> Map.delete(:__meta__)}
+      t: Map.delete(post, :__meta__)}
+  end
+
+  defp na_or_value(datum, keys, fun) do
+    if keys |> Enum.all?(& datum[&1]) do
+      fun.()
+    else
+      :na
+    end
   end
 
   @doc """
   Converts the given delta list into a list of chunks.
   """
   def chunk_data(delta_list, opts \\ []) do
-    count = opts[:chunk_size] || @chunk_size
+    count = chunk_size(opts)
     step = opts[:chunk_step] || @chunk_step
     delta_list
     |> Stream.chunk(count, step)
     |> Enum.filter(& chunk_elems_in_seq?(&1, count))
-  end
-
-  defp chunk_elems_in_seq?(chunk, chunk_size) do
-    time_pre = List.last(chunk).time
-    time_post = hd(chunk).time
-    TimeDiff.compare(time_pre, time_post, 15 * (chunk_size - 1)) == 0
   end
 end
