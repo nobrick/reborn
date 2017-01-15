@@ -6,17 +6,20 @@ defmodule Machine.Simulator do
   A module for simulating the backtest result.
   """
 
+  import Machine.DataHelper, only: [ma_s: 1, ma_m: 1, ma_l: 1, la: 1,
+                                    has_ma?: 1, bias: 2]
   import Utils.Number, only: [floor: 1]
 
-  @compile {:inline, init_seq_pft_state: 0, ma_s: 1, ma_m: 1, ma_l: 1, la: 1}
   @pft_threshold Application.get_env(:machine, :pft_threshold)
-  @seq_names ~w(gt_threshold gt_0 exp_1 exp_2 exp_3 e4 la_gt_ma_s ma_e4 ma_e5
-                ma_e45 ma_e45s ma_gt_0 ma_pure_0 ma_pure_0s ma_pure_1 s_t0)a
+  @seq_names ~w(gt_threshold gt_0 gt_shift exp_1 exp_2 exp_3 e4 la_gt_ma_s
+                ma_e4 ma_e5 ma_e45 ma_e45s ma_gt_0 ma_pure_0 ma_pure_0s
+                ma_pure_1 s_t0)a
 
   @doc """
   Simulates each sequence strategies and generate the pfts and instructions.
   """
-  def test_sequence_pfts(result, seq_names \\ @seq_names) do
+  def test_sequence_pfts(result, seq_names \\ nil) do
+    seq_names = seq_names || @seq_names
     {seq_info, seq_lists} =
       seq_names
       |> Enum.map(fn n -> sequence_pft(result, & seq_r_fun(n, &1, &2)) end)
@@ -98,7 +101,7 @@ defmodule Machine.Simulator do
     next_pft = next_nav - 1.0
     next_max_nav = max(curr_max_nav, next_nav)
     next_min_nav = min(curr_min_nav, next_nav)
-    next_dd = (curr_max_nav - next_nav) / curr_max_nav
+    next_dd = (next_max_nav - next_nav) / next_max_nav
     next_mdd = max(curr_mdd, next_dd)
     next_derived = %{nav: next_nav, pft: next_pft, max_nav: next_max_nav,
                      min_nav: next_min_nav, dd: next_dd, mdd: next_mdd,
@@ -198,10 +201,24 @@ defmodule Machine.Simulator do
     p = datum[:p]
     cond do
       is_nil(p) ->
-        {:of_partial, 0.8}
+        :of_all
       p >= @pft_threshold ->
         :bi_all
       p > 0 ->
+        {:remain, :"p>0"}
+      true ->
+        :of_all
+    end
+  end
+
+  defp seq_r_fun(:gt_shift, datum, _) do
+    p = datum[:p]
+    cond do
+      is_nil(p) ->
+        :of_all
+      p >= @pft_threshold ->
+        :bi_all
+      p > 0.0002 ->
         {:remain, :"p>0"}
       true ->
         :of_all
@@ -212,7 +229,7 @@ defmodule Machine.Simulator do
     p = datum[:p]
     cond do
       is_nil(p) ->
-        {:of_partial, 0.8}
+        :of_all
       p > 0 ->
         :bi_all
       true ->
@@ -408,11 +425,11 @@ defmodule Machine.Simulator do
     has_ma = has_ma?([c1, c2, c3])
     {la_pulse, ma_pulse} =
       if has_ma do
-        {(ma_s(c1) - la(c1)) / ma_s(c1) + 1.0 * dd,
-         (ma_l(c1) - ma_s(c1)) / ma_l(c1) + 1.0 * dd}
+        {bias(la(c1), ma_s(c1)) - 1.0 * dd + (p || 0),
+         bias(ma_s(c1), ma_l(c1)) - 1.0 * dd + (p || 0)}
       else
         {-1, -1}
-      end
+      end |> IO.inspect
     risk_count =
       cond do
         ma_pulse < 0 or la_pulse < 0 ->
@@ -429,17 +446,21 @@ defmodule Machine.Simulator do
     go = fn instruction ->
       [go: instruction, acc: put_in(acc[:risk_count], risk_count)]
     end
-
     cond do
       is_nil(p) or not has_ma ->
+        IO.puts "of_all: is_nil(p) or not has_ma"
         go.(:of_all)
       base_ma_pure_0(c1, c2) ->
+        IO.puts "bi_all: base_ma_pure_0"
         go.(:bi_all)
       base_ma_pure_1(c1, c2) ->
+        IO.puts "bi_all: base_ma_pure_1"
         go.(:bi_all)
-      p > 0 and risk_count <= 0 ->
+      p > 0.0005 and risk_count <= 0 ->
+        IO.puts "bi_all: p > 0 and risk_count <= 0"
         go.(:bi_all)
       true ->
+        IO.puts "of_all: true"
         go.(:of_all)
     end
   end
@@ -478,20 +499,5 @@ defmodule Machine.Simulator do
     ma_s(c1) >= ma_m(c1) and
     ma_m(c1) >= ma_l(c1) and
     la(c1) >= la(c2) # ema
-  end
-
-  ## Helpers
-
-  defp ma_s(chunk_datum), do: chunk_datum[:t][:sma_s]
-  defp ma_m(chunk_datum), do: chunk_datum[:t][:sma_m]
-  defp ma_l(chunk_datum), do: chunk_datum[:t][:sma_l]
-  defp la(chunk_datum), do: chunk_datum[:t][:la]
-
-  defp has_ma?(chunk_datums) when is_list(chunk_datums) do
-    Enum.all?(chunk_datums, &has_ma?/1)
-  end
-
-  defp has_ma?(chunk_datum) do
-    ma_s(chunk_datum) && ma_m(chunk_datum) && ma_l(chunk_datum)
   end
 end
