@@ -30,7 +30,7 @@ defmodule Utils.Param do
   ## Helpers
 
   defp to_float(str) when is_binary(str) do
-    if Regex.match?(~r/\d+\.\d+/, str) do
+    if Regex.match?(~r/\d+\.\d+/, str) or Regex.match?(~r/\d+/, str) do
       String.to_float(str)
     else
       str
