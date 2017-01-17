@@ -28,10 +28,8 @@ defmodule Caravan.Wheel.Modes.K15 do
     ]]
   end
 
-  ## Helpers
-
-  defp map_resp(body) do
-    body |> Enum.map(&to_ticker_map/1)
+  def map_resp(body) do
+    Enum.map(body, &to_ticker_map/1)
   end
 
   defp to_ticker_map([time, op, hi, lo, la, vo]) do
