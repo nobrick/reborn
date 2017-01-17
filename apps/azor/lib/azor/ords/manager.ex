@@ -31,14 +31,14 @@ defmodule Azor.Ords.Manager do
       iex> Manager.add_bi(Manager, 3000, 0.01, %{cond: {:la_below_p}})
       {:ok, 8}
   """
-  def add_bi(server, p, amt, watch) do
+  def add_bi(server \\ __MODULE__, p, amt, watch) do
     GenServer.call(server, {:add_bi, p, amt, watch})
   end
 
   @doc """
   Adds of watch.
   """
-  def add_of(server, p, amt, watch) do
+  def add_of(server \\ __MODULE__, p, amt, watch) do
     GenServer.call(server, {:add_of, p, amt, watch})
   end
 
@@ -47,14 +47,14 @@ defmodule Azor.Ords.Manager do
 
   Note the `cny_amt` argument takes cny unit.
   """
-  def add_bi_mkt(server, cny_amt, watch) do
+  def add_bi_mkt(server \\ __MODULE__, cny_amt, watch) do
     GenServer.call(server, {:add_bi_mkt, cny_amt, watch})
   end
 
   @doc """
   Adds of_mkt watch.
   """
-  def add_of_mkt(server, amt, watch) do
+  def add_of_mkt(server \\ __MODULE__, amt, watch) do
     GenServer.call(server, {:add_of_mkt, amt, watch})
   end
 
@@ -68,14 +68,15 @@ defmodule Azor.Ords.Manager do
                          [{:add_of_mkt, 0.01, %{cond: {:la_below_p}}},
                           {:add_of, 3020, 0.01, %{cond: {:now}}}]})
   """
-  def batch(server, args) do
+  def batch(server \\ __MODULE__, args) do
     GenServer.call(server, {:batch, args})
   end
 
   @doc """
   Syncs ord status.
   """
-  def sync_ord(server, id, status, info \\ %{}) when status in @statuses do
+  def sync_ord(server \\ __MODULE__, id, status, info \\ %{})
+      when status in @statuses do
     GenServer.call(server, {:sync_ord, id, status, info})
   end
 
@@ -84,7 +85,7 @@ defmodule Azor.Ords.Manager do
 
   This function will cancel ord remotely if possible.
   """
-  def cancel_ord(server, id) do
+  def cancel_ord(server \\ __MODULE__, id) do
     GenServer.call(server, {:cancel_ord, id})
   end
 
@@ -93,14 +94,14 @@ defmodule Azor.Ords.Manager do
 
   Returns {:ok, id} if ord is found, :not_exist otherwise.
   """
-  def get_ord(server, id) do
+  def get_ord(server \\ __MODULE__, id) do
     GenServer.call(server, {:get_ord, id})
   end
 
   @doc """
   Get ords.
   """
-  def get_ords(server, ids) do
+  def get_ords(server \\ __MODULE__, ids) do
     GenServer.call(server, {:get_ords, ids})
   end
 
@@ -109,14 +110,14 @@ defmodule Azor.Ords.Manager do
 
   Returns an atom if ord is found, nil otherwise.
   """
-  def get_status(server, id) do
+  def get_status(server \\ __MODULE__, id) do
     GenServer.call(server, {:get_status, id})
   end
 
   @doc """
   Inspect state.
   """
-  def inspect_state(server) do
+  def inspect_state(server \\ __MODULE__) do
     GenServer.call(server, {:inspect_state})
   end
 
