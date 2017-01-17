@@ -17,16 +17,24 @@ defmodule Machine.Adapters.CloudForest.Predictor do
   def predict(dir_path) do
     args = "-preds=#{@predictions_name} -fm=#{@test_name} " <>
            "-rfpred=#{@forest_name}"
-    {result, 0} = System.cmd("applyforest", String.split(args), cd: dir_path)
-    IO.puts result
+    {result, err_code} = System.cmd("applyforest", String.split(args),
+                                    cd: dir_path)
+    if err_code != 0 do
+      raise "applyforest returns non-zero code #{err_code}.\n#{result}"
+    end
   end
 
   @doc """
   Saves the target data for backtesting.
+
+  ## Options
+
+      - `id`: The target label. -1 by default.
+      - `actual`: The actual target value. -1.0 by default.
   """
-  def save_data(dir_path, target_chunk) do
+  def save_test(dir_path, target_tl, opts \\ []) do
     test_path = Path.join(dir_path, @test_name)
-    DataWriter.save_data(DataWriter, test_path, [target_chunk])
+    DataWriter.save_test(DataWriter, test_path, target_tl, opts)
   end
 
   @precision 7

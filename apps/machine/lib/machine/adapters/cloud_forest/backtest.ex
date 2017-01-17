@@ -20,22 +20,26 @@ defmodule Machine.Adapters.CloudForest.Backtest do
   Backtests for one.
   """
   def test_one(dir_path, [%{d_la: d_la, time: time, id: label}|target_tl] =
-               target_chunk, chunks, opts) do
+               _target, chunks, opts) do
     filters = Keyword.get(opts, :filters, @filters)
-    pattern = Enum.map(target_tl, & &1.d_la)
     time = to_utc_time(time)
-    corr_chunks = Corr.find_corr_chunks(chunks, pattern, :d_la)
-    case Corr.filter_corr_chunks(corr_chunks, filters) do
-      {:ok, logs, filtered} ->
-        Trainer.save_data(dir_path, filtered |> Stream.map(& elem(&1, 0)))
-        Trainer.learn(dir_path)
-        Predictor.save_data(dir_path, target_chunk)
-        Predictor.predict(dir_path)
-        [status: :ok, logs: logs, pred: Predictor.read_prediction(dir_path),
-         time: time]
-      {:error, logs} ->
-        [status: :error, logs: logs, pred: {label, nil, d_la}, time: time]
-    end
+    corr_chunks = Corr.find_corr_chunks(chunks, target_tl)
+    ret =
+      case Corr.filter_corr_chunks(corr_chunks, filters) do
+        {:ok, logs, filtered} ->
+          Trainer.save_data(dir_path, filtered |> Stream.map(& elem(&1, 0)))
+          Trainer.learn(dir_path)
+          Predictor.save_test(dir_path, target_tl, [id: label, actual: d_la])
+          Predictor.predict(dir_path)
+          [status: :ok, logs: logs, pred: Predictor.read_prediction(dir_path),
+           time: time]
+        {:error, logs} ->
+          [status: :error, logs: logs, pred: {label, nil, d_la}, time: time]
+      end
+    IO.puts "#{inspect hd(ret[:logs])}\t\t" <>
+            "#{elem(ret[:pred], 1) |> inspect |> String.pad_trailing(18)}" <>
+            "#{inspect elem(ret[:pred], 2)}"
+    ret
   end
 
   @doc """
@@ -92,12 +96,11 @@ defmodule Machine.Adapters.CloudForest.Backtest do
       |> Flow.from_enumerable
       |> Flow.partition(stages: @stages_num)
       |> Flow.map(fn {target, index} ->
-        IO.puts "---- #{index}..#{target_chunks_count - 1} ----"
+        IO.write "#{index}...#{target_chunks_count}\t\t\r"
         subdir_path = Path.join(build_path, Integer.to_string(index))
         File.mkdir!(subdir_path)
         test_one(subdir_path, target, lookup_chunks, opts)
         |> Keyword.merge([chunk: target, index: index])
-        |> IO.inspect
       end)
       |> Enum.sort_by(& Keyword.fetch!(&1, :time),
                       & TimeDiff.compare(&1, &2, nil, :seconds) <= 0)
@@ -109,7 +112,8 @@ defmodule Machine.Adapters.CloudForest.Backtest do
         (hd(chunk).d_la + 1) * acc
       end)
       |> (& {floor(&1 - 1), target_chunks_count}).()
-    {seq_pfts, seq_lists} = Simulator.test_sequence_pfts(result)
+    {seq_pfts, seq_lists} =
+      Simulator.test_sequence_pfts(result, opts[:seq_names])
 
     pfts =
       seq_pfts ++
@@ -140,7 +144,9 @@ defmodule Machine.Adapters.CloudForest.Backtest do
 
   defp make_data_dir do
     {{y, m, d}, {hh, mm, ss}} = :calendar.universal_time
-    path = Path.join(@data_storage_path, "#{y}-#{m}-#{d}-#{hh}-#{mm}-#{ss}")
+    token = Enum.take_random(?a..?z, 3)
+    path = Path.join(@data_storage_path,
+                     "#{y}-#{m}-#{d}-#{hh}-#{mm}-#{ss}-#{token}")
     File.mkdir!(path)
     path
   end

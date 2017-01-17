@@ -7,16 +7,20 @@ defmodule Machine.Adapters.CloudForest.Trainer do
 
   @samples_name "samples.trans.fm"
   @forest_name "forest.sf"
+  @pattern_key Application.get_env(:machine, :pattern_key)
 
   @doc """
   Trains the data.
   """
   def learn(dir_path) do
     args =
-      "-train=#{@samples_name} -rfpred=#{@forest_name} -target=N:d_la0 " <>
-      "-nTrees=1000 -mTry=.33 -oob=false -nCores=1" |> String.split
-    {result, 0} = System.cmd("growforest", args, cd: dir_path)
-    IO.puts result
+      "-train=#{@samples_name} -rfpred=#{@forest_name} " <>
+      "-target=N:#{@pattern_key}0 -nTrees=100 -mTry=.33 -oob=false -nCores=1"
+    args = String.split(args)
+    {result, err_code} = System.cmd("growforest", args, cd: dir_path)
+    if err_code != 0 do
+      raise "growforest returns non-zero code #{err_code}.\n#{result}"
+    end
   end
 
   @doc """
