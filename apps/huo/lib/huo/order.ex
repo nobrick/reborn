@@ -28,7 +28,7 @@ defmodule Huo.Order do
     ret = get(%{method: :get_orders, coin_type: 1})
     with {:ok, ords} when is_list(ords) <- ret do
       {:ok, Enum.map(ords, fn %{"type" => type} = ord ->
-              %{ord|"type" => ord_type_by(type)}
+              Param.format_resp(%{ord|"type" => ord_type_by(type)})
             end)}
     end
   end
@@ -53,6 +53,10 @@ defmodule Huo.Order do
 
   @doc """
   Add BI ord.
+
+  ## Arguments
+
+      `amt`: btc amt.
 
   Returns a tuple in the following form when succeeds:
 
