@@ -22,4 +22,8 @@ defmodule Utils.Time do
     |> DateTime.shift_zone!("Etc/UTC")
     |> DateTime.to_erl
   end
+
+  def to_timex(%Ecto.DateTime{} = time) do
+    (Ecto.DateTime.to_iso8601(time) <> "Z") |> Timex.parse!("{ISO:Extended:Z}")
+  end
 end
