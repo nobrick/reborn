@@ -3,65 +3,31 @@ defmodule Machine.Corr do
   alias Ecto.Adapters.SQL
   alias Dirk.Repo
 
-  @doc """
-  Finds the chunks correlated with the `pattern` value list on the given `key`.
-
-  Returns a stream of tuples in the format of `{chunk, correlation}`.
-
-  ## Arguments
-  
-      `chunks`  - The base chunks to search in.
-      `pattern` - The target value list to be patterned on. The correlation is
-                  computed between the pattern list and the tail list of a
-                  chunk. This also means that the size of the pattern list
-                  should be `chuck_size - 1`.
-      `key`     - The key on which the values are fetched in each delta map of
-                  a chunk, to form a value list computing the correlation with
-                  the given `pattern`.
-
-  ## Examples
-
-      iex> chunks = Machine.DataGen.fetch_chunks(100, 300000)
-      iex> target_chunk = Machine.DataGen.fetch_chunks(0, 10) |> hd
-      iex> pattern = target_chunk |> Enum.map(& &1.d_la) |> tl
-      iex> stream = Machine.Corr.stream_corr_chunks(chunks, pattern, :d_la)
-      iex> stream |> Stream.filter(& elem(&1, 1) >= 0.75) |> Enum.count
-
-  """
-  def stream_corr_chunks(chunks, pattern, key \\ :d_la) do
-    chunks |> Stream.map(& map_corr_chunk(&1, pattern, key))
+  def stream_corr_chunks(chunks, pattern) do
+    Stream.map(chunks, & map_corr_chunk(&1, pattern))
   end
 
   @corr_chunk_stages_num 4
 
-  @doc """
-  Finds the chunks correlated with the `pattern` value list in parallel on the
-  given `key`.
-
-  Similar to `stream_corr_chunks/3`. Returns a Flow struct.
-
-  """
-  def flow_corr_chunks(chunks, pattern, key \\ :d_la) do
+  def flow_corr_chunks(chunks, pattern) do
     chunks
     |> Flow.from_enumerable
     |> Flow.partition(stages: @corr_chunk_stages_num)
-    |> Flow.map(& map_corr_chunk(&1, pattern, key))
+    |> Flow.map(& map_corr_chunk(&1, pattern))
   end
 
-  defp map_corr_chunk([_|chunk_tl] = chunk, pattern, key) do
-    {chunk, Enum.map(chunk_tl, & Map.fetch!(&1, key)) |> compute_corr(pattern)}
+  defp map_corr_chunk(chunk, pattern) do
+    {chunk, compute_corr(get_pattern(chunk), pattern)}
   end
 
-  @doc """
-  Finds the chunks correlated with the `pattern` value list on the given `key`.
+  def find_corr_chunks(chunks, target_tl) do
+    chunks |> flow_corr_chunks(get_pattern(target_tl)) |> Enum.to_list
+  end
 
-  Behind the scenes, the function uses `flow_corr_chunks/3`.  
-
-  Returns a list of tuples in the format of `{chunk, correlation}`.
-
-  """
-  def find_corr_chunks(chunks, pattern, key \\ :d_la) do
-    flow_corr_chunks(chunks, pattern, key) |> Enum.to_list
+  defp get_pattern(target_tl) do
+    # Enum.map(target_tl, & &1.d_la)
+    [c1|[c2|[c3|_]]] = target_tl
+    [c1.bias_la_s, c1.bias_s_m, c1.bias_m_l, c1.d_la, c2.d_la, c3.d_la]
   end
 
   @doc """
