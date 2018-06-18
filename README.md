@@ -1,3 +1,4 @@
 # Reborn
-An algorithmic cryptocurrency trading platform (the early version of the
-algorithmic-trading part of the Reverie Project) for Elixir.
+## Note
+ [OBSOLETED] This code was the early version of the algorithmic-trading part of
+ the Reverie Project, which is no longer maintained.
